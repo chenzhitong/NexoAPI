@@ -15,6 +15,10 @@ namespace NexoAPI.Data
         {
         }
 
-        public DbSet<Account> Address { get; set; } = default!;
+        public DbSet<Account> Account { get; set; } = default!;
+
+        public DbSet<User> User { get; set; } = default!;
+
+        public DbSet<Remark> Remark { get; set; } = default!;
     }
 }

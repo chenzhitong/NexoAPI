@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using NexoAPI;
 using NexoAPI.Data;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<NexoAPIContext>(options =>
@@ -13,10 +14,11 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "这是文档标题",
-        Version = "文档版本编号",
-        Description = "文档描述"
+        Title = "Nexo API",
+        Version = "1.0",
+        Description = "Nexo API Swagger Doc"
     });
+    //c.OperationFilter<CustomHeaderSwaggerAttribute>();
     var file = Path.Combine(AppContext.BaseDirectory, "NexoAPI.xml");  // xml文档绝对路径
     var path = Path.Combine(AppContext.BaseDirectory, file); // xml文档绝对路径
     c.IncludeXmlComments(path, true); // true : 显示控制器层注释

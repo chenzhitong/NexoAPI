@@ -1,6 +1,12 @@
-﻿using NexoAPI.Models;
+﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
+using Neo;
+using Neo.Cryptography.ECC;
+using Neo.SmartContract;
+using Neo.Wallets;
+using NexoAPI.Models;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace NexoAPI
 {
@@ -19,9 +25,14 @@ namespace NexoAPI
                 result[i] = byte.Parse(value.Substring(i * 2, 2), NumberStyles.AllowHexSpecifier);
             return result;
         }
+        public static string Sha256(this string input)
+        {
+            using SHA256 obj = SHA256.Create();
+            return BitConverter.ToString(obj.ComputeHash(Encoding.UTF8.GetBytes(input))).Replace("-", "");
+        }
 
-        public static bool VerifySignature(string pubkey, string signature, string message) =>
-            VerifySignature(System.Text.Encoding.UTF8.GetBytes(message), signature.HexToBytes(), pubkey.HexToBytes());
+        public static bool VerifySignature(string messageHash, string pubkey, string signature)
+         => VerifySignature(Encoding.UTF8.GetBytes(messageHash), signature.HexToBytes(), pubkey.HexToBytes());
 
         public static bool VerifySignature(byte[] message, byte[] signature, byte[] pubkey)
         {
@@ -46,8 +57,8 @@ namespace NexoAPI
             }
             using var ecdsa = ECDsa.Create(new ECParameters
             {
-                Curve = ECCurve.NamedCurves.nistP256,
-                Q = new ECPoint
+                Curve = System.Security.Cryptography.ECCurve.NamedCurves.nistP256,
+                Q = new System.Security.Cryptography.ECPoint
                 {
                     X = pubkey.Take(32).ToArray(),
                     Y = pubkey.Skip(32).ToArray()

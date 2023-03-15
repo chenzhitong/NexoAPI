@@ -8,7 +8,7 @@ namespace NexoAPI.Models
 {
     public class Account
     {
-        public int Id { get; }
+        public int Id { get; set; }
 
         public string Address { get; set; }
 
@@ -16,15 +16,14 @@ namespace NexoAPI.Models
 
         public int Threshold { get; set; }
 
-        public string MultiSignScriptHash { get => GetScriptHash().ToString(); }
+        public ICollection<Remark> Remark { get; set; }
 
-        public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
-
-        public string GetAddress() => GetScriptHash().ToAddress(0x35);
-
-        public DateTime CreateTime { get; set; }
+        [NotMapped]
+        public string ScriptHash { get => GetScriptHash().ToString(); }
 
         [NotMapped]
         public decimal Nep17ValueUsd { get; set; }
+
+        public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
     }
 }
