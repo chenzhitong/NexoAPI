@@ -20,5 +20,7 @@ namespace NexoAPI.Data
         public DbSet<User> User { get; set; } = default!;
 
         public DbSet<Remark> Remark { get; set; } = default!;
+
+        public DbSet<NexoAPI.Models.Transaction> Transaction { get; set; } = default!;
     }
 }

@@ -1,12 +1,15 @@
-﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
+﻿using Akka.IO;
+using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Neo;
 using Neo.Cryptography.ECC;
+using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NexoAPI.Models;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NexoAPI
 {
@@ -14,9 +17,15 @@ namespace NexoAPI
     {
         public static List<NonceInfo> Nonces = new List<NonceInfo>();
 
+        public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
+
+        public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
+
+        public static RpcClient Client = new (new Uri("http://seed1.neo.org:20332"), null, null, ProtocolSettings.Load("config.json"));
+
         public static byte[] HexToBytes(this string value)
         {
-            if (value == null || value.Length == 0)
+            if (value is null || value.Length == 0)
                 return Array.Empty<byte>();
             if (value.Length % 2 == 1)
                 throw new FormatException();
@@ -28,11 +37,11 @@ namespace NexoAPI
         public static string Sha256(this string input)
         {
             using SHA256 obj = SHA256.Create();
-            return BitConverter.ToString(obj.ComputeHash(Encoding.UTF8.GetBytes(input))).Replace("-", "");
+            return BitConverter.ToString(obj.ComputeHash(Encoding.UTF8.GetBytes(input))).Replace("-", string.Empty);
         }
 
-        public static bool VerifySignature(string messageHash, string pubkey, string signature)
-         => VerifySignature(Encoding.UTF8.GetBytes(messageHash), signature.HexToBytes(), pubkey.HexToBytes());
+        public static bool VerifySignature(string message, string pubkey, string signature)
+         => VerifySignature(Encoding.UTF8.GetBytes(message), signature.HexToBytes(), pubkey.HexToBytes());
 
         public static bool VerifySignature(byte[] message, byte[] signature, byte[] pubkey)
         {

@@ -18,6 +18,9 @@ using Neo.Cryptography;
 using System.Security.Policy;
 using Neo;
 using Neo.IO;
+using NexoAPI.Migrations;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
 namespace NexoAPI.Controllers
 {
@@ -33,7 +36,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("{address}/actions/sign-in")]
-        public async Task<ObjectResult> _([FromBody] SignInViewModel body, string address)
+        public async Task<ObjectResult> Create([FromBody] UserRequest request, string address)
         {
             //address 检查
             try
@@ -42,14 +45,14 @@ namespace NexoAPI.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Address is incorrect.", data = $"Address: {address}" } );
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Address is incorrect.", data = $"Address: {address}" });
             }
 
             //nonce 检查
-            var nonce = Helper.Nonces.FirstOrDefault(p => p.Nonce == body.Nonce);
-            if (nonce == null)
+            var nonce = Helper.Nonces.FirstOrDefault(p => p.Nonce == request.Nonce);
+            if (nonce is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Unauthorized, nonce is incorrect.", data = $"Nonce: {body.Nonce}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Unauthorized, nonce is incorrect.", data = $"Nonce: {request.Nonce}" });
             }
 
             //nonce 有效期检查
@@ -58,26 +61,47 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Unauthorized, nonce has been expired.", data = $"Nonce create time: {nonce.CreateTime}" });
             }
 
+            //publicKey 检查
+            if (!Helper.PublicKeyIsValid(request.PublicKey))
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key incorrect.", data = $"Public key: {request.PublicKey}" });
+
+            //signature 检查
+            if (!Helper.SignatureIsValid(request.Signature))
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
+
             //检查公钥和地址是否匹配
-            var publicKeyToAddress = Contract.CreateSignatureContract(Neo.Cryptography.ECC.ECPoint.Parse(body.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35);
+            var publicKeyToAddress = Contract.CreateSignatureContract(Neo.Cryptography.ECC.ECPoint.Parse(request.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35);
             if (publicKeyToAddress != address)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key and address mismatch.", data = "" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key and address mismatch." });
             }
 
             //生成待签名的消息和消息哈希
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce);
-            var messageHash = message.Sha256();
 
             //验证签名
-            if (!Helper.VerifySignature(messageHash, body.PublicKey, body.Signature))
+            if (!Helper.VerifySignature(message, request.PublicKey, request.Signature))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"Message: {message} Message Hash: {messageHash}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"Message: {message}" });
             }
 
             //创建 User
-            var user = new User() { Address = address, CreateTime = DateTime.UtcNow, PublicKey = body.PublicKey, Token = Guid.NewGuid().ToString() };
-            _context.User.Add(user);
+            var user = new Models.User()
+            {
+                Address = address,
+                CreateTime = DateTime.UtcNow,
+                PublicKey = request.PublicKey,
+                Token = Guid.NewGuid().ToString()
+            };
+            var oldUser = _context.User.FirstOrDefault(p => p.Address == user.Address);
+
+            //首次登录，创建 Token
+            if (oldUser is null)
+                _context.User.Add(user);
+            //再次登录，更新 Token
+            else
+                oldUser.Token = user.Token;
+
             await _context.SaveChangesAsync();
 
             //Nonce 使用后删除
@@ -88,36 +112,22 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("sign-in-test")]
-        public string _()
+        [Produces("application/json")]
+        public ObjectResult Test()
         {
-            using CngKey key = CngKey.Create(CngAlgorithm.ECDsaP256, null, new CngKeyCreationParameters { ExportPolicy = CngExportPolicies.AllowPlaintextArchiving });
-            var privateKey = key.Export(CngKeyBlobFormat.EccPrivateBlob).Take(32).ToArray();
+            var privateKey = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(privateKey);
             var publicKey = new KeyPair(privateKey).PublicKey;
             var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress(0x35);
-            var nonce = new NoncesController().GenerateGUID();
+            var nonce = new NoncesController().Create();
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce);
-            var messageHash = message.Sha256();
-            var signature = Crypto.Sign(Encoding.UTF8.GetBytes(messageHash), privateKey, publicKey.EncodePoint(false)[1..]);
-            return new { Address = address, Nonce = nonce, PublicKey = publicKey.ToArray().ToHexString(), Signature = signature.ToHexString(), Message = message, MessageHash = messageHash }.ToJson();
+            var signature = Crypto.Sign(Encoding.UTF8.GetBytes(message), privateKey, publicKey.EncodePoint(false)[1..]);
+            return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
         }
 
         [HttpGet]
-        public IEnumerable<UserResult> _([FromQuery] string[] addresses)
-        {
-            return _context.User.Where(p => addresses.Contains(p.Address)).Select(p => new UserResult() { Address = p.Address, PublicKey = p.PublicKey });
-        }
-    }
-
-    public class UserResult
-    {
-        public string Address { get; set; }
-        public string PublicKey { get; set; }
-    }
-
-    public class SignInViewModel
-    {
-        public string Nonce { get; set; }
-        public string Signature { get; set; }
-        public string PublicKey { get; set; }
+        public IEnumerable<UserResponse> List([FromQuery] string[] addresses)
+            => _context.User.Where(p => addresses.Contains(p.Address)).Select(p => new UserResponse(p));
     }
 }

@@ -14,5 +14,7 @@ namespace NexoAPI.Models
         public string RemarkName { get; set; }
 
         public DateTime CreateTime { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }
