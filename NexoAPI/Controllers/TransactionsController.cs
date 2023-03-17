@@ -27,7 +27,7 @@ namespace NexoAPI.Controllers
 
         // GET: api/Transactions
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Transaction>>> List([FromHeader] string authorization, string account, string owner, string signable, int? skip, int? limit, string? cursor)
+        public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string signable, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -64,17 +64,15 @@ namespace NexoAPI.Controllers
 
             var list = new List<Transaction>();
 
-            //交易是Signing状态且该owner没签过名
-            if (signable.ToLower() == "true")
+            if (bool.TryParse(signable, out bool signableBool))
             {
-                list = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
+                list = signableBool ?
+                    //交易是Signing状态且该owner没签过名
+                    _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
                     .Where(p => p.Account.Address == account)
-                    .Where(p => p.Status == TransactionStatus.Signing && !p.SignResult.Any(p => p.Signer.Address.Contains(owner))).ToList();
-            }
-            //交易不是Signing状态或该owner签过名
-            else if (signable.ToLower() == "false")
-            {
-                list = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
+                    .Where(p => p.Status == TransactionStatus.Signing && !p.SignResult.Any(p => p.Signer.Address.Contains(owner))).ToList() :
+                    //交易不是Signing状态或该owner签过名
+                    _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
                     .Where(p => p.Account.Address == account)
                     .Where(p => p.Status != TransactionStatus.Signing || p.SignResult.Any(p => p.Signer.Address.Contains(owner)))
                     .OrderByDescending(p => p.CreateTime).ThenBy(p => p.Hash).ToList();
@@ -105,20 +103,19 @@ namespace NexoAPI.Controllers
                 }
 
                 //按时间倒序排序后，筛选从 Cursor hash 开始（含）的数据
-                var startIndex = list.FindIndex(p => p.Hash == cursorJson["hash"].AsString());
+                var startIndex = list.FindIndex(p => p.Hash == cursorJson["hash"]?.AsString());
                 if (startIndex > 0)
                     list.RemoveRange(0, startIndex);
             }
 
             var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new TransactionResponse(p));
 
-            return await _context.Transaction.ToListAsync();
+            return new ObjectResult(result);
         }
 
         // POST: api/Transactions
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ObjectResult> Create([FromHeader] string authorization, TransactionRequest request)
+        public async Task<ObjectResult> PostTransaction([FromHeader] string authorization, TransactionRequest request)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -186,8 +183,8 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Type is incorrect.", data = $"Type: {request.Type}" });
             }
 
-            //_context.Transaction.Add(transaction);
-            //await _context.SaveChangesAsync();
+            _context.Transaction.Add(tx);
+            await _context.SaveChangesAsync();
 
             return new ObjectResult(new { });
         }

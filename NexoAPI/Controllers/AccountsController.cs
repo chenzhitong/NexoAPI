@@ -33,7 +33,7 @@ namespace NexoAPI.Controllers
 
         [HttpGet]
         [Produces("application/json")]
-        public async Task<ObjectResult> List([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
+        public ObjectResult GetAccountList([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -102,7 +102,7 @@ namespace NexoAPI.Controllers
 
         [HttpGet("{address}")]
         [Produces("application/json")]
-        public async Task<ObjectResult> Details([FromHeader] string authorization, string address)
+        public async Task<ObjectResult> GetAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -138,7 +138,7 @@ namespace NexoAPI.Controllers
         // Swagger has bugs, do not test in swagger
         // https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/1938#issuecomment-1205715331
         [HttpPost]
-        public async Task<ObjectResult> Create([FromHeader] string authorization, [FromBody] AccountRequest request)
+        public async Task<ObjectResult> PostAccount([FromHeader] string authorization, [FromBody] AccountRequest request)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -207,7 +207,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpDelete("{address}")]
-        public async Task<ObjectResult> Delete([FromHeader] string authorization, string address)
+        public async Task<ObjectResult> DeleteAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -246,7 +246,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("{address}/actions/set-remark")]
-        public async Task<ObjectResult> Edit([FromHeader] string authorization, [FromBody] SetRemarkViewModel body, string address)
+        public async Task<ObjectResult> PutAccount([FromHeader] string authorization, [FromBody] SetRemarkViewModel body, string address)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))

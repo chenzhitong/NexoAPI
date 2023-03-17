@@ -1,7 +1,1 @@
-Welcome to NEXO!
-
-Signing is the only way we can truly know that you are the owner of the wallet you are connecting. Signing is a safe, gas-less transaction that does not in any way give NEXO permission to perform any transactions with your wallet.
-
-Wallet address: {0}
-
-Nonce: {1}
+Welcome to NEXO! Signing is the only way we can truly know that you are the owner of the wallet you are connecting. Signing is a safe, gas-less transaction that does not in any way give NEXO permission to perform any transactions with your wallet. Wallet address: {0} Nonce: {1}

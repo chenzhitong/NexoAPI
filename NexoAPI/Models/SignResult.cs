@@ -6,10 +6,29 @@
 
         public Transaction Transaction { get; set; }
 
-        public Account Signer {get; set; }
+        public User Signer {get; set; }
 
         public bool Approved { get; set; }
 
-        public bool Signature { get; set; }
+        public string Signature { get; set; }
+    }
+
+    public class SignResultRequest
+    {
+        public string Approved { get; set; }
+
+        public string Signature { get; set; }
+    }
+
+
+    public class SignResultResponse
+    {
+        public string TransactionHash { get; set; }
+
+        public string Signer { get; set; }
+
+        public bool Approved { get; set; }
+
+        public string Signature { get; set; }
     }
 }

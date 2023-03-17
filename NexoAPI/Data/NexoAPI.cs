@@ -22,5 +22,7 @@ namespace NexoAPI.Data
         public DbSet<Remark> Remark { get; set; } = default!;
 
         public DbSet<NexoAPI.Models.Transaction> Transaction { get; set; } = default!;
+
+        public DbSet<NexoAPI.Models.SignResult> SignResult { get; set; } = default!;
     }
 }

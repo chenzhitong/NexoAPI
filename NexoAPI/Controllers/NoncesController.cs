@@ -10,7 +10,7 @@ namespace NexoAPI.Controllers
     public class NoncesController : ControllerBase
     {
         [HttpPost]
-        public string Create()
+        public string PostNonce()
         {
             var nonce = Guid.NewGuid().ToString();
             Helper.Nonces.RemoveAll(p => (DateTime.UtcNow - p.CreateTime).TotalMinutes > 20);

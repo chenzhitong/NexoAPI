@@ -43,6 +43,9 @@ namespace NexoAPI
         public static bool VerifySignature(string message, string pubkey, string signature)
          => VerifySignature(Encoding.UTF8.GetBytes(message), signature.HexToBytes(), pubkey.HexToBytes());
 
+        public static bool VerifySignature(byte[] message, string pubkey, string signature)
+         => VerifySignature(message, signature.HexToBytes(), pubkey.HexToBytes());
+
         public static bool VerifySignature(byte[] message, byte[] signature, byte[] pubkey)
         {
             if (pubkey.Length == 33 && (pubkey[0] == 0x02 || pubkey[0] == 0x03))
