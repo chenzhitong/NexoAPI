@@ -82,9 +82,10 @@ namespace NexoAPI.Controllers
 
             //生成待签名的消息
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce);
+            var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
 
             //验证签名
-            if (!Helper.VerifySignature(message, request.PublicKey, request.Signature))
+            if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"Message: {message}" });
             }
@@ -126,7 +127,8 @@ namespace NexoAPI.Controllers
             var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress(0x35);
             var nonce = new NoncesController().PostNonce();
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce);
-            var signature = Crypto.Sign(Encoding.UTF8.GetBytes(message), privateKey, publicKey.EncodePoint(false)[1..]);
+            var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
+            var signature = Crypto.Sign(hexStr, privateKey, publicKey.EncodePoint(false)[1..]);
             return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
         }
 
