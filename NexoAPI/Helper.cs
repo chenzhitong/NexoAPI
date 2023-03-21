@@ -29,7 +29,7 @@ namespace NexoAPI
 
         public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
 
-        public static RpcClient Client = new (new Uri("http://seed1.neo.org:20332"), null, null, ProtocolSettings.Load("config.json"));
+        public static RpcClient Client = new (new Uri("http://seed1.neo.org:10332"), null, null, null);
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
@@ -107,6 +107,30 @@ namespace NexoAPI
             writer.Write(new UInt256(hash));
             writer.Flush();
             return ms.ToArray();
+        }
+
+        public static string PostWebRequest(string postUrl, string paramData)
+        {
+            try
+            {
+                var result = string.Empty;
+                var httpContent = new StringContent(paramData);
+                httpContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json")
+                {
+                    CharSet = "utf-8"
+                };
+                using var httpClient = new HttpClient();
+                var response = httpClient.PostAsync(postUrl, httpContent).Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    result = response.Content.ReadAsStringAsync().Result;
+                }
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }
