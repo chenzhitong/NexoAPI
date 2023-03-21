@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Util;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Neo;
+using Neo.Network.P2P.Payloads;
 using NexoAPI.Data;
 using NexoAPI.Models;
 
 namespace NexoAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("sign-results")]
     [ApiController]
     public class SignResultsController : ControllerBase
     {
@@ -22,25 +26,41 @@ namespace NexoAPI.Controllers
             _context = context;
         }
 
-        // GET: api/SignResults/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<SignResult>> GetSignResult(int id)
+        public async Task<ObjectResult> GetSignResult([FromHeader] string authorization, string transactionHash)
         {
-          if (_context.SignResult == null)
-          {
-              return NotFound();
-          }
-            var signResult = await _context.SignResult.FindAsync(id);
-
-            if (signResult == null)
+            //Authorization 格式检查
+            if (!authorization.StartsWith("Bearer "))
             {
-                return NotFound();
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
-            return signResult;
+            //Authorization 有效性检查
+            var token = authorization.Replace("Bearer ", string.Empty);
+            var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
+            if (currentUser is null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+            }
+
+            //transactionHash 检查
+            var tx = _context.Transaction.Include(p => p.Account).FirstOrDefault(p => p.Hash == transactionHash);
+            if (tx is null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Transaction {transactionHash} does not exist." });
+            }
+
+            //当前用户必须在该交易的所属账户的 owners 中
+            if (!tx.Account.Owners.Contains(currentUser.Address))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"The current user must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Current User: {currentUser.Address}" });
+            }
+
+            var result = _context.SignResult.Where(p => p.Transaction.Hash == transactionHash).ToList().ConvertAll(p => new SignResultResponse() { TransactionHash = p.Transaction.Hash, Signer = p.Signer.Address, Approved = p.Approved, Signature = p.Signature });
+
+            return new ObjectResult(result);
         }
 
-        // PUT: api/SignResults/5
         [HttpPut("{transactionHash}/{signer}")]
         public async Task<ObjectResult> PutSignResult([FromHeader] string authorization, [FromBody]SignResultRequest request, string transactionHash, string signer)
         {
@@ -90,9 +110,10 @@ namespace NexoAPI.Controllers
             }
 
             //验证签名
-            if (!Helper.VerifySignature(transactionHash.HexToBytes(), currentUser.PublicKey, request.Signature))
+            var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
+            if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"Message: {transactionHash}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
             }
 
             var sr = new SignResult() { Approved = approved, Signature = request.Signature, Signer = currentUser, Transaction = tx };

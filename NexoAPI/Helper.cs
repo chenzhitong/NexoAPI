@@ -1,13 +1,19 @@
 ﻿using Akka.IO;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Neo;
+using Neo.Cryptography;
 using Neo.Cryptography.ECC;
+using Neo.IO;
+using Neo.Ledger;
+using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.Wallets;
 using NexoAPI.Models;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -15,6 +21,8 @@ namespace NexoAPI
 {
     public static class Helper
     {
+        public static uint Network = 0x334F454Eu;
+
         public static List<NonceInfo> Nonces = new List<NonceInfo>();
 
         public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
@@ -42,6 +50,16 @@ namespace NexoAPI
             }
 
             static string Num2hexstring(long num, int size) => BitConverter.GetBytes(num).Take(size).ToArray().ToHexString();
+        }
+
+        public static byte[] GetSignData(UInt256 txHash)
+        {
+            using MemoryStream ms = new();
+            using BinaryWriter writer = new(ms);
+            writer.Write(Network);
+            writer.Write(txHash);
+            writer.Flush();
+            return ms.ToArray();
         }
 
         public static byte[] HexToBytes(this string value)
@@ -79,6 +97,16 @@ namespace NexoAPI
                 }
             });
             return ecdsa.VerifyData(message, signature, HashAlgorithmName.SHA256);
+        }
+
+        public static byte[] GetSignData(byte[] hash, uint network)
+        {
+            using MemoryStream ms = new();
+            using BinaryWriter writer = new(ms);
+            writer.Write(network);
+            writer.Write(new UInt256(hash));
+            writer.Flush();
+            return ms.ToArray();
         }
     }
 }

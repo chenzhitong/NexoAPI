@@ -25,7 +25,6 @@ namespace NexoAPI.Controllers
             _context = context;
         }
 
-        // GET: api/Transactions
         [HttpGet]
         public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string signable, int? skip, int? limit, string? cursor)
         {
@@ -113,7 +112,6 @@ namespace NexoAPI.Controllers
             return new ObjectResult(result);
         }
 
-        // POST: api/Transactions
         [HttpPost]
         public async Task<ObjectResult> PostTransaction([FromHeader] string authorization, TransactionRequest request)
         {

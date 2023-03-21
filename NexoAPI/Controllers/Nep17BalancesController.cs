@@ -2,7 +2,7 @@
 
 namespace NexoAPI.Controllers
 {
-    [Route("/nep17-balances")]
+    [Route("nep17-balances")]
     [ApiController]
     public class Nep17BalancesController : Controller
     {

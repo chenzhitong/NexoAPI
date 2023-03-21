@@ -25,6 +25,8 @@ namespace NexoAPI.Models
         public decimal Nep17ValueUsd { get; set; }
 
         public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
+
+        public byte[] GetScript() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
     }
 
     public class AccountRequest
