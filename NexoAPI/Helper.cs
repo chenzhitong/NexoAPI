@@ -1,4 +1,5 @@
 ﻿using Akka.IO;
+using Akka.Util;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Neo;
@@ -10,7 +11,9 @@ using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.Wallets;
+using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
+using NuGet.Protocol;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Policy;
@@ -29,7 +32,7 @@ namespace NexoAPI
 
         public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
 
-        public static RpcClient Client = new (new Uri("http://seed1.neo.org:10332"), null, null, null);
+        public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
@@ -132,5 +135,46 @@ namespace NexoAPI
                 throw;
             }
         }
+
+        public static decimal GetNep17AssetsValue(string address)
+        {
+            decimal totalValue = 0;
+            var scriptHash = address.ToScriptHash(0x35).ToString();
+            // 查询该地址上所有NEP-17资产的合约地址
+            var response = Helper.PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
+            var jobject = JObject.Parse(response);
+            var list = new List<TokenBalance>();
+            foreach (var item in jobject["result"]["result"])
+            {
+                if (string.IsNullOrEmpty(item["tokenid"].ToString()))
+                {
+                    var asset = item["asset"].ToString();
+                    var amount = ChangeToDecimal(item["balance"].ToString());
+                    var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(asset).Result;
+                    var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
+                    list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
+                }
+            }
+
+            var response2 = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", list.Select(p => p.ContractHash).ToArray().ToJson()));
+            var sum = 0m;
+            for (int i = 0; i < list.Count; i++)
+            {
+                sum += ChangeToDecimal(response2?[i].ToString()) * list[i].TrueBalcnce; ;
+            }
+
+            return sum;
+        }
+        public static decimal ChangeToDecimal(string strData)
+        {
+            return strData.Contains('E', StringComparison.OrdinalIgnoreCase) ? Convert.ToDecimal(decimal.Parse(strData.ToString(), System.Globalization.NumberStyles.Float)) : Convert.ToDecimal(strData);
+        }
+    }
+
+    class TokenBalance
+    {
+        public string ContractHash { get; set; }
+
+        public decimal TrueBalcnce { get; set; }
     }
 }

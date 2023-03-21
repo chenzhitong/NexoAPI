@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Neo.IO;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
@@ -34,6 +35,7 @@ namespace NexoAPI.Controllers
             var result = new List<Nep17BalanceResponse>();
             foreach (var item in jobject["result"]["result"])
             {
+                if(string.IsNullOrEmpty(item["tokenid"].ToString()))
                 result.Add(new Nep17BalanceResponse() { Address = address, Amount = item["balance"].ToString(), ContractHash = item["asset"].ToString() });
             }
             return new ObjectResult(result);

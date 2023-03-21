@@ -1,4 +1,5 @@
-﻿using Neo;
+﻿using Akka.Actor;
+using Neo;
 using Neo.Cryptography.ECC;
 using Neo.SmartContract;
 using Neo.Wallets;
@@ -47,6 +48,7 @@ namespace NexoAPI.Models
             Threshold = p.Threshold;
             Remark = p.Remark.First().RemarkName;
             CreateTime = p.Remark.First().CreateTime;
+            Nep17ValueUsd = Helper.GetNep17AssetsValue(p.Address);
         }
 
         public string Address { get; set; }

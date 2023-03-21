@@ -68,7 +68,7 @@ namespace NexoAPI.Controllers
                 {
                     //按时间倒序排序后，筛选早于等于 Cursor CreateTime 时间的数据
                     cursorTime = DateTime.Parse(cursorJson["createTime"].AsString());
-                    list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).Where(p => p.Remark.First(r => r.User == currentUser).CreateTime <= cursorTime).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
+                    list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).Where(p => p.Remark.First(r => r.User == currentUser).CreateTime <= cursorTime).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
                 }
                 catch (Exception)
                 {
@@ -92,7 +92,7 @@ namespace NexoAPI.Controllers
             }
             else
             {
-                list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
+                list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
             }
 
             var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new AccountResponse(p));
@@ -118,7 +118,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
-            var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
+            var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
@@ -132,8 +132,12 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
             }
 
+            account.Nep17ValueUsd = Helper.GetNep17AssetsValue(address);
             return new ObjectResult(new AccountResponse(account));
         }
+
+        [HttpGet("valuation-test/{address}")]
+        public ObjectResult GetAccountValuation(string address) => new ObjectResult(Helper.GetNep17AssetsValue(address));
 
         // Swagger has bugs, do not test in swagger
         // https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/1938#issuecomment-1205715331
@@ -179,7 +183,7 @@ namespace NexoAPI.Controllers
             //创建多签账户
             var account = new Account()
             {
-                Owners = string.Join(',', request.PublicKeys.ToArray()),
+                Owners = string.Join(',', owners),
                 Threshold = request.Threshold,
                 Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress(0x35)
             };
