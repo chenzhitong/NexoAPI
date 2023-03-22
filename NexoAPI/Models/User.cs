@@ -1,6 +1,4 @@
-﻿using Akka.Actor;
-
-namespace NexoAPI.Models
+﻿namespace NexoAPI.Models
 {
     public class User
     {

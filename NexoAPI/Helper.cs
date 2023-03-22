@@ -1,13 +1,6 @@
-﻿using Akka.IO;
-using Akka.Util;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.CodeAnalysis.Elfie.Extensions;
+﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Neo;
-using Neo.Cryptography;
-using Neo.Cryptography.ECC;
 using Neo.IO;
-using Neo.Ledger;
-using Neo.Network.P2P.Payloads;
 using Neo.Network.RPC;
 using Neo.SmartContract;
 using Neo.Wallets;
@@ -16,7 +9,6 @@ using NexoAPI.Models;
 using NuGet.Protocol;
 using System.Globalization;
 using System.Security.Cryptography;
-using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -24,15 +16,19 @@ namespace NexoAPI
 {
     public static class Helper
     {
-        public static uint Network = 0x334F454Eu;
+        private static readonly uint Network = 0x334F454Eu;
 
-        public static List<NonceInfo> Nonces = new List<NonceInfo>();
+#pragma warning disable CA2211 // 非常量字段应当不可见
+        public static List<NonceInfo> Nonces = new();
+#pragma warning restore CA2211 // 非常量字段应当不可见
 
         public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
 
         public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
 
+#pragma warning disable CA2211 // 非常量字段应当不可见
         public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
+#pragma warning restore CA2211 // 非常量字段应当不可见
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
@@ -78,8 +74,7 @@ namespace NexoAPI
         }
         public static string Sha256(this string input)
         {
-            using SHA256 obj = SHA256.Create();
-            return BitConverter.ToString(obj.ComputeHash(Encoding.UTF8.GetBytes(input))).Replace("-", string.Empty);
+            return BitConverter.ToString(SHA256.HashData(Encoding.UTF8.GetBytes(input))).Replace("-", string.Empty);
         }
 
         public static bool VerifySignature(byte[] message, string pubkey, string signatureHex)
@@ -138,29 +133,27 @@ namespace NexoAPI
 
         public static decimal GetNep17AssetsValue(string address)
         {
-            decimal totalValue = 0;
             var scriptHash = address.ToScriptHash(0x35).ToString();
             // 查询该地址上所有NEP-17资产的合约地址
             var response = Helper.PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             var list = new List<TokenBalance>();
-            foreach (var item in jobject["result"]["result"])
+            if (jobject?["result"]?["result"] is null)
+                return 0;
+            foreach (var item in (jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>()).Where(item => string.IsNullOrEmpty(item?["tokenid"]?.ToString())))
             {
-                if (string.IsNullOrEmpty(item["tokenid"].ToString()))
-                {
-                    var asset = item["asset"].ToString();
-                    var amount = ChangeToDecimal(item["balance"].ToString());
-                    var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(asset).Result;
-                    var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
-                    list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
-                }
+                var asset = item["asset"]?.ToString() ?? string.Empty;
+                var amount = ChangeToDecimal(item["balance"]?.ToString() ?? "0");
+                var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(asset).Result;
+                var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
+                list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
             }
 
             var response2 = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", list.Select(p => p.ContractHash).ToArray().ToJson()));
             var sum = 0m;
             for (int i = 0; i < list.Count; i++)
             {
-                sum += ChangeToDecimal(response2?[i].ToString()) * list[i].TrueBalcnce; ;
+                sum += ChangeToDecimal(response2?[i]?.ToString() ?? "0") * list[i].TrueBalcnce; ;
             }
 
             return sum;

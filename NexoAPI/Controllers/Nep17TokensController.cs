@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Neo.Network.RPC.Models;
-using Neo.Network.RPC;
-using Neo.SmartContract.Native;
 using Neo;
-using System.Security.Policy;
+using Neo.Network.RPC;
+using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
 using NuGet.Protocol;
-using Neo.Json;
 
 namespace NexoAPI.Controllers
 {
@@ -41,7 +38,7 @@ namespace NexoAPI.Controllers
             var response = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", contractHashes.ToJson()));
             for (int i = 0; i < result.Count; i++)
             {
-                result[i].PriceUsd = response?[i]?.AsString()??"0";
+                result[i].PriceUsd = response?[i]?.ToString() ?? "0";
             }
 
             return new ObjectResult(result);

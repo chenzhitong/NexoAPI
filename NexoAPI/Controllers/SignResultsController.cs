@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Akka.Actor;
-using Akka.Util;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Neo;
-using Neo.Network.P2P.Payloads;
 using NexoAPI.Data;
 using NexoAPI.Models;
 
@@ -27,7 +18,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ObjectResult> GetSignResult([FromHeader] string authorization, string transactionHash)
+        public ObjectResult GetSignResult([FromHeader] string authorization, string transactionHash)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -62,7 +53,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("{transactionHash}/{signer}")]
-        public async Task<ObjectResult> PutSignResult([FromHeader] string authorization, [FromBody]SignResultRequest request, string transactionHash, string signer)
+        public async Task<ObjectResult> PutSignResult([FromHeader] string authorization, [FromBody] SignResultRequest request, string transactionHash, string signer)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -88,11 +79,11 @@ namespace NexoAPI.Controllers
             var tx = _context.Transaction.Include(p => p.Account).FirstOrDefault(p => p.Hash == transactionHash);
             if (tx is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Transaction {transactionHash} does not exist."});
+                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Transaction {transactionHash} does not exist." });
             }
 
             //signer 参数必须在该交易的所属账户的 owners 中
-            if(!tx.Account.Owners.Contains(signer))
+            if (!tx.Account.Owners.Contains(signer))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
             }
@@ -120,7 +111,7 @@ namespace NexoAPI.Controllers
             _context.SignResult.Add(sr);
             await _context.SaveChangesAsync();
 
-            return new ObjectResult(new { });
+            return new(new { });
         }
     }
 }

@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Akka.Actor;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Neo;
-using Neo.Json;
+using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
 
@@ -56,7 +48,7 @@ namespace NexoAPI.Controllers
             }
 
             //owner 参数必须在该账户的 owners 中
-            if(!accountItem.Owners.Contains(owner))
+            if (!accountItem.Owners.Contains(owner))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The owner parameter must be in the owners of the account" });
             }
@@ -93,7 +85,7 @@ namespace NexoAPI.Controllers
                 try
                 {
                     //按时间倒序排序后，筛选早于等于 Cursor CreateTime 时间的数据
-                    cursorTime = DateTime.Parse(cursorJson["createTime"].AsString());
+                    cursorTime = DateTime.Parse(cursorJson?["createTime"]?.ToString() ?? DateTime.UtcNow.ToString());
                     list = list.Where(p => p.CreateTime <= cursorTime).ToList();
                 }
                 catch (Exception)
@@ -102,7 +94,7 @@ namespace NexoAPI.Controllers
                 }
 
                 //按时间倒序排序后，筛选从 Cursor hash 开始（含）的数据
-                var startIndex = list.FindIndex(p => p.Hash == cursorJson["hash"]?.AsString());
+                var startIndex = list.FindIndex(p => p.Hash == cursorJson?["hash"]?.ToString());
                 if (startIndex > 0)
                     list.RemoveRange(0, startIndex);
             }
@@ -184,7 +176,7 @@ namespace NexoAPI.Controllers
             _context.Transaction.Add(tx);
             await _context.SaveChangesAsync();
 
-            return new ObjectResult(new { });
+            return new(new { });
         }
 
         [HttpPost("Test")]

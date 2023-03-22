@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using NexoAPI.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace NexoAPI.Controllers
 {

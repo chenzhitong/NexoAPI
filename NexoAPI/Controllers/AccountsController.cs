@@ -1,22 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NexoAPI.Models;
-using NexoAPI.Data;
-using System.Text.RegularExpressions;
-using Neo.SmartContract;
 using Neo.Cryptography.ECC;
+using Neo.SmartContract;
 using Neo.Wallets;
-using System.Net;
-using Neo.Json;
-using Akka.Actor;
-using NuGet.Protocol;
-using System.Security.Cryptography.X509Certificates;
-using NexoAPI.Migrations;
+using Newtonsoft.Json.Linq;
+using NexoAPI.Data;
+using NexoAPI.Models;
 
 namespace NexoAPI.Controllers
 {
@@ -67,7 +56,7 @@ namespace NexoAPI.Controllers
                 try
                 {
                     //按时间倒序排序后，筛选早于等于 Cursor CreateTime 时间的数据
-                    cursorTime = DateTime.Parse(cursorJson["createTime"].AsString());
+                    cursorTime = DateTime.Parse(cursorJson?["createTime"]?.ToString() ?? DateTime.UtcNow.ToString());
                     list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).Where(p => p.Remark.First(r => r.User == currentUser).CreateTime <= cursorTime).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
                 }
                 catch (Exception)
@@ -76,7 +65,7 @@ namespace NexoAPI.Controllers
                 }
 
                 //address 检查
-                var address = cursorJson["address"].AsString();
+                var address = cursorJson?["address"]?.ToString() ?? string.Empty;
                 try
                 {
                     address.ToScriptHash(0x35);
@@ -102,7 +91,7 @@ namespace NexoAPI.Controllers
 
         [HttpGet("{address}")]
         [Produces("application/json")]
-        public async Task<ObjectResult> GetAccount([FromHeader] string authorization, string address)
+        public ObjectResult GetAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -137,7 +126,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet("valuation-test/{address}")]
-        public ObjectResult GetAccountValuation(string address) => new ObjectResult(Helper.GetNep17AssetsValue(address));
+        public ObjectResult GetAccountValuation(string address) => new(Helper.GetNep17AssetsValue(address));
 
         // Swagger has bugs, do not test in swagger
         // https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/1938#issuecomment-1205715331
@@ -166,7 +155,7 @@ namespace NexoAPI.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key incorrect.", data = $"Public key: {pubKey}" });
                 owners.Add(Contract.CreateSignatureContract(ECPoint.Parse(pubKey, ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35));
             }
-            owners.OrderBy(p => p);
+            owners = owners.OrderBy(p => p).ToList();
 
             //仅限当前用户的publicKey在publicKeys参数中
             if (!request.PublicKeys.Contains(currentUser.PublicKey))
@@ -207,7 +196,7 @@ namespace NexoAPI.Controllers
             });
             await _context.SaveChangesAsync();
 
-            return new ObjectResult(new { });
+            return new(new { });
         }
 
         [HttpDelete("{address}")]
@@ -243,10 +232,24 @@ namespace NexoAPI.Controllers
 
             //软删除
             var remark = _context.Remark.FirstOrDefault(p => p.Account.Address == address && p.User.Address == currentUser.Address);
-            remark.IsDeleted = true;
+            if (remark is null)
+            {
+                _context.Remark.Add(new Remark()
+                {
+                    User = currentUser,
+                    Account = account,
+                    RemarkName = string.Empty,
+                    CreateTime = DateTime.UtcNow,
+                    IsDeleted = true
+                });
+            }
+            else
+            {
+                remark.IsDeleted = true;
+            }
             await _context.SaveChangesAsync();
 
-            return new ObjectResult(new { });
+            return new(new { });
         }
 
         [HttpPut("{address}/actions/set-remark")]
@@ -282,10 +285,24 @@ namespace NexoAPI.Controllers
 
             //修改备注
             var remark = _context.Remark.FirstOrDefault(p => p.Account.Address == address && p.User.Address == currentUser.Address);
-            remark.RemarkName = body.Remark;
+            if (remark is null)
+            {
+                _context.Remark.Add(new Remark()
+                {
+                    User = currentUser,
+                    Account = account,
+                    RemarkName = body.Remark,
+                    CreateTime = DateTime.UtcNow,
+                    IsDeleted = true
+                });
+            }
+            else
+            {
+                remark.RemarkName = body.Remark;
+            }
             await _context.SaveChangesAsync();
 
-            return new ObjectResult(new { });
+            return new(new { });
         }
     }
 

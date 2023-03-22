@@ -1,26 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Neo.Json;
-using Neo.SmartContract;
-using Neo.Cryptography.ECC;
-using Neo.Wallets;
-using NuGet.Protocol;
-using NexoAPI.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Neo;
+using Neo.Cryptography;
+using Neo.IO;
+using Neo.SmartContract;
+using Neo.Wallets;
+using NexoAPI.Data;
 using NexoAPI.Models;
 using System.Security.Cryptography;
-using System.Text;
-using Akka.Actor;
-using Akka.IO;
-using Neo.Cryptography;
-using System.Security.Policy;
-using Neo;
-using Neo.IO;
-using NexoAPI.Migrations;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
 
 namespace NexoAPI.Controllers
 {

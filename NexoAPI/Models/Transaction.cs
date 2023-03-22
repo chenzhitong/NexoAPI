@@ -1,12 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace NexoAPI.Models
+﻿namespace NexoAPI.Models
 {
     public class Transaction
     {
         public int Id { get; set; }
 
-        public Account  Account { get; set; }
+        public Account Account { get; set; }
 
         public TransactionType Type{ get; set; }
 

@@ -1,8 +1,6 @@
-﻿using Akka.Actor;
-using Neo;
+﻿using Neo;
 using Neo.Cryptography.ECC;
 using Neo.SmartContract;
-using Neo.Wallets;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NexoAPI.Models
