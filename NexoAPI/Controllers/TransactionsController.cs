@@ -1,8 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Neo.Network.RPC;
+using Neo.SmartContract.Native;
+using Neo.Wallets;
+using Neo;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
+using Neo.SmartContract;
+using Neo.Cryptography.ECC;
+using Neo.VM;
+using Akka.Actor;
+using System.Security.Policy;
+using NuGet.Protocol.Plugins;
+using Neo.IO;
 
 namespace NexoAPI.Controllers
 {
@@ -18,7 +29,7 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet]
-        public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string signable, int? skip, int? limit, string? cursor)
+        public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string? signable, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
@@ -135,10 +146,13 @@ namespace NexoAPI.Controllers
             }
 
             //feePayer 检查
-            var feePayerItem = _context.User.FirstOrDefault(p => p.Address == request.FeePayer);
-            if (feePayerItem is null)
+            try
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"FeePayer {request.FeePayer} does not exist." });
+                request.FeePayer.ToScriptHash(0x35);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Fee payer is incorrect.", data = $"Fee payer: {request.FeePayer}" });
             }
 
             //feePayer 必须等于该账户或在该账户的 owners 中
@@ -147,11 +161,26 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
             }
 
+            //验证ContractHash
+            if (!UInt160.TryParse(request.ContractHash, out UInt160 contractHash))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Contract hash is incorrect.", data = $"Contract hash: {request.ContractHash}" });
+            }
+            var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
+            if (tokenInfo is null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Default.Network}" });
+            }
+
             var tx = new Transaction()
             {
                 Account = accountItem,
-                FeePayer = feePayerItem,
+                FeePayer = request.FeePayer,
+                Creater = currentUser.Address,
+                CreateTime = DateTime.UtcNow, 
+                Status = TransactionStatus.Signing,
                 ContractHash = request.ContractHash,
+                ValidUntilBlock = Helper.GetBlockCount().Result + 5760
             };
 
             if (Enum.TryParse(request.Type, out TransactionType type))
@@ -160,12 +189,34 @@ namespace NexoAPI.Controllers
                 if (type == TransactionType.Invocation)
                 {
                     tx.Operation = request.Operation;
-                    tx.Params = request.Params;
+                    tx.Params = request.Params.ToString();
                 }
                 else if (type == TransactionType.Nep17Transfer)
                 {
-                    tx.Amount = request.Amount;
-                    tx.Destination = request.Destination;
+                    decimal amount;
+                    UInt160 receiver;
+                    try
+                    {
+                        amount = Helper.ChangeToDecimal(request.Amount);
+                        tx.Amount = request.Amount;
+                    }
+                    catch (Exception)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Amount is incorrect.", data = $"Amount: {request.Amount}" });
+                    }
+                    try
+                    {
+                        receiver = request.Destination.ToScriptHash(0x35);
+                        tx.Destination = request.Destination;
+                    }
+                    catch (Exception)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Destination is incorrect.", data = $"Destination: {request.Destination}" });
+                    }
+
+                    var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver).Result;
+                    tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                    tx.Hash = rawTx.Hash.ToArray().ToHexString();
                 }
             }
             else
@@ -179,11 +230,23 @@ namespace NexoAPI.Controllers
             return new(new { });
         }
 
-        [HttpPost("Test")]
-        public async Task<ObjectResult> Test()
+        private static async Task<Neo.Network.P2P.Payloads.Transaction> TransferFromMultiSignAccount(Account account, UInt160 contractHash, decimal amount,  UInt160 receiver)
         {
-            var blockcount = await Helper.Client.GetBlockCountAsync().ConfigureAwait(false);
-            return new ObjectResult(blockcount);
+            var multiAccount = account.GetScriptHash();
+            var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
+
+            var script = contractHash.MakeScript("transfer", multiAccount, receiver, amount * (decimal)Math.Pow(10, tokenInfo.Decimals), string.Empty);
+
+            var signers = new[] 
+            { 
+                new Neo.Network.P2P.Payloads.Signer
+                { Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, Account = multiAccount
+                } 
+            };
+
+            var txManager = await new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).ConfigureAwait(false);
+
+            return txManager.Tx;
         }
     }
 }

@@ -100,15 +100,19 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Approved incorrect.", data = $"Approved: {request.Approved}" });
             }
 
-            //验证签名
-            var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
-            if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
+            if (approved)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
+                //验证签名
+                var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
+                if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
+                }
             }
 
             var sr = new SignResult() { Approved = approved, Signature = request.Signature, Signer = currentUser, Transaction = tx };
             _context.SignResult.Add(sr);
+
             await _context.SaveChangesAsync();
 
             return new(new { });

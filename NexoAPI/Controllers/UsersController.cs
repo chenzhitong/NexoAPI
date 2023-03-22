@@ -7,6 +7,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using NexoAPI.Data;
 using NexoAPI.Models;
+using NLog;
 using System.Security.Cryptography;
 
 namespace NexoAPI.Controllers

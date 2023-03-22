@@ -1,4 +1,6 @@
-﻿namespace NexoAPI.Models
+﻿using Neo.Json;
+
+namespace NexoAPI.Models
 {
     public class Transaction
     {
@@ -8,15 +10,15 @@
 
         public TransactionType Type{ get; set; }
 
-        public string RawData { get; set; }
+        public string RawData { get; set; } = string.Empty;
 
-        public string Hash { get; set; }
+        public string Hash { get; set; } = string.Empty;
 
-        public int ValidUntilBlock { get; set; }
+        public uint ValidUntilBlock { get; set; }
 
-        public User Creater { get; set; }
+        public string Creater { get; set; }
 
-        public User FeePayer { get; set; }
+        public string FeePayer { get; set; }
 
         public DateTime CreateTime { get; set; }
 
@@ -26,15 +28,15 @@
 
         public ICollection<SignResult> SignResult { get; set; }
 
-        public string ContractHash { get; set; }
+        public string ContractHash { get; set; } = string.Empty;
 
-        public string Operation { get; set; }
+        public string Operation { get; set; } = string.Empty;
 
-        public string Params { get; set; }
+        public string Params { get; set; } = string.Empty;
 
-        public string Amount { get; set; }
+        public string Amount { get; set; } = string.Empty;
 
-        public string Destination { get; set; }
+        public string Destination { get; set; } = string.Empty;
     }
 
     public class TransactionRequest
@@ -47,13 +49,20 @@
 
         public string ContractHash { get; set; }
 
-        public string Operation { get; set; }
+        public string Operation { get; set; } = string.Empty;
 
-        public string Params { get; set; }
+        public Params[] Params { get; set; } = new Params[0];
 
-        public string Amount { get; set; }
+        public string Amount { get; set; } = string.Empty;
 
-        public string Destination { get; set; }
+        public string Destination { get; set; } = string.Empty;
+    }
+
+    public class Params
+    {
+        public string Type { get; set; }
+
+        public string Value { get; set; }
     }
 
     public class TransactionResponse
@@ -65,8 +74,8 @@
             RawData = p.RawData;
             Hash = p.Hash;
             ValidUntilBlock = p.ValidUntilBlock;
-            Creater = p.Creater.Address;
-            FeePayer = p.FeePayer.Address;
+            Creater = p.Creater;
+            FeePayer = p.FeePayer;
             CreateTime = p.CreateTime;
             ExecuteTime = p.ExecuteTime;
             Status = p.Status.ToString();
@@ -85,7 +94,7 @@
 
         public string Hash { get; set; }
 
-        public int ValidUntilBlock { get; set; }
+        public uint ValidUntilBlock { get; set; }
 
         public string Creater { get; set; }
 

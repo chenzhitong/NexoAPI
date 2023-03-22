@@ -6,6 +6,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
+using NLog;
 using NuGet.Protocol;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -126,6 +127,8 @@ namespace NexoAPI
                 throw;
             }
         }
+
+        public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
         public static decimal GetNep17AssetsValue(string address)
         {

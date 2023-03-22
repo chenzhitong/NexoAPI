@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexoAPI.Data;
 
@@ -11,9 +12,11 @@ using NexoAPI.Data;
 namespace NexoAPI.Migrations
 {
     [DbContext(typeof(NexoAPIContext))]
-    partial class NexoAPIContextModelSnapshot : ModelSnapshot
+    [Migration("20230322082151_Transaction")]
+    partial class Transaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -168,8 +171,8 @@ namespace NexoAPI.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<long>("ValidUntilBlock")
-                        .HasColumnType("bigint");
+                    b.Property<int>("ValidUntilBlock")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

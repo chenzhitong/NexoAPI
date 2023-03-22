@@ -13,6 +13,8 @@
         public DateTime CreateTime { get; set; }
 
         public ICollection<Remark> Remark { get; set; }
+
+        public ICollection<SignResult> SignResult { get; set; }
     }
 
     public class UserRequest
