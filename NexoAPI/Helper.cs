@@ -18,17 +18,13 @@ namespace NexoAPI
     {
         private static readonly uint Network = 0x334F454Eu;
 
-#pragma warning disable CA2211 // 非常量字段应当不可见
         public static List<NonceInfo> Nonces = new();
-#pragma warning restore CA2211 // 非常量字段应当不可见
 
         public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
 
         public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
 
-#pragma warning disable CA2211 // 非常量字段应当不可见
         public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
-#pragma warning restore CA2211 // 非常量字段应当不可见
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
