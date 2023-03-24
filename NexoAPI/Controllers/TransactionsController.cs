@@ -19,6 +19,7 @@ using Akka.Util.Internal;
 namespace NexoAPI.Controllers
 {
     [Route("[controller]")]
+    [Produces("application/json")]
     [ApiController]
     public class TransactionsController : ControllerBase
     {

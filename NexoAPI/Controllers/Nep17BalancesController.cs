@@ -6,6 +6,7 @@ using NexoAPI.Models;
 namespace NexoAPI.Controllers
 {
     [Route("nep17-balances")]
+    [Produces("application/json")]
     [ApiController]
     public class Nep17BalancesController : Controller
     {

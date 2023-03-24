@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 namespace NexoAPI.Controllers
 {
     [Route("[controller]")]
+    [Produces("application/json")]
     [ApiController]
     public class UsersController : ControllerBase
     {
@@ -105,7 +106,6 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("sign-in-test")]
-        [Produces("application/json")]
         public ObjectResult Test()
         {
             var privateKey = new byte[32];

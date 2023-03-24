@@ -7,6 +7,7 @@ using NexoAPI.Models;
 namespace NexoAPI.Controllers
 {
     [Route("sign-results")]
+    [Produces("application/json")]
     [ApiController]
     public class SignResultsController : ControllerBase
     {

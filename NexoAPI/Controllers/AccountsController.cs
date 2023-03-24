@@ -10,6 +10,7 @@ using NexoAPI.Models;
 namespace NexoAPI.Controllers
 {
     [Route("[controller]")]
+    [Produces("application/json")]
     [ApiController]
     public partial class AccountsController : ControllerBase
     {
@@ -21,7 +22,6 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet]
-        [Produces("application/json")]
         public ObjectResult GetAccountList([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
@@ -90,7 +90,6 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet("{address}")]
-        [Produces("application/json")]
         public ObjectResult GetAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查

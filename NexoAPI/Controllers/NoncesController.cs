@@ -3,6 +3,7 @@
 namespace NexoAPI.Controllers
 {
     [Route("[controller]")]
+    [Produces("application/json")]
     [ApiController]
     public class NoncesController : ControllerBase
     {

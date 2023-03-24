@@ -8,6 +8,7 @@ using NuGet.Protocol;
 namespace NexoAPI.Controllers
 {
     [Route("nep17-tokens")]
+    [Produces("application/json")]
     [ApiController]
     public class Nep17TokensController : Controller
     {
