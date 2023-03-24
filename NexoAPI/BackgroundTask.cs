@@ -16,9 +16,10 @@ namespace NexoAPI
         public readonly Logger _logger;
         private readonly NexoAPIContext _context;
 
-        public BackgroundTask(NexoAPIContext context)
+        public BackgroundTask(IServiceScopeFactory _serviceScopeFactory)
         {
-            _context = context;
+            var scope = _serviceScopeFactory.CreateScope();
+            _context = scope.ServiceProvider.GetRequiredService<NexoAPIContext>();
             _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
         }
 
@@ -34,8 +35,19 @@ namespace NexoAPI
 
                 foreach (var tx in list1)
                 {
-                    var rawTx = Neo.Network.RPC.Models.RpcTransaction.FromJson((JObject)JToken.Parse(tx.RawData), ProtocolSettings.Default).Transaction;
-                    
+                    var jtTx = JToken.Parse(tx.RawData);
+                    if (jtTx == null)
+                    {
+                        _logger.Error($"JToken.Parse(tx.RawData) 时出错，tx.RawData = {tx.RawData}");
+                        continue;
+                    }
+                    var rawTx = Neo.Network.RPC.Models.RpcTransaction.FromJson((JObject)jtTx, ProtocolSettings.Default).Transaction;
+                    if (rawTx == null)
+                    {
+                        _logger.Error($"RpcTransaction.FromJson() 时出错，tx.RawData = {tx.RawData}");
+                        continue;
+                    }
+
                     //FeePayer需要单独的签名
                     var feePayerSignResult = tx.SignResult.FirstOrDefault(p => !p.InWitness && p.Signer.Address == tx.FeePayer);
                     if (feePayerSignResult is not null)
@@ -60,7 +72,7 @@ namespace NexoAPI
 
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
                     var otherSignResult = tx.SignResult.Where(p => !p.InWitness && p.Signer.Address != tx.FeePayer).OrderBy(p => p.Signer.PublicKey).ToList();
-                    if (otherSignResult is not null && otherSignResult.Count() >= tx.Account.Threshold)
+                    if (otherSignResult is not null && otherSignResult.Count >= tx.Account.Threshold)
                     {
                         using ScriptBuilder scriptBuilder = new();
                         otherSignResult.ForEach(p => 
@@ -78,7 +90,7 @@ namespace NexoAPI
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
 
                         //发送交易
-                        if(feePayerSignResult.InWitness)
+                        if(feePayerSignResult != null && feePayerSignResult.InWitness)
                         try
                         {
                             var send = Helper.Client.SendRawTransactionAsync(rawTx).Result;
