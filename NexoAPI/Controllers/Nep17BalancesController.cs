@@ -21,13 +21,13 @@ namespace NexoAPI.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Address is incorrect.", data = $"Address: {address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Address is incorrect.", data = $"Address: {address}" });
             }
             var response = Helper.PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             if ((double)(jobject?["result"]?["totalCount"] ?? 0) > 100)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Too many assets in this address, more than 100 assets.", data = $"Address: {address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Too many assets in this address, more than 100 assets.", data = $"Address: {address}" });
             }
             var result = new List<Nep17BalanceResponse>();
             foreach (var item in jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>())

@@ -28,12 +28,12 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The contract is not found in the current network.", data = $"Contract hash: {item}, Network: {ProtocolSettings.Default.Network}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {item}, Network: {ProtocolSettings.Default.Network}" });
                     }
                 }
                 else
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Contract hash format error.", data = $"Contract hash: {item}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash format error.", data = $"Contract hash: {item}" });
                 }
             }
             var response = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", contractHashes.ToJson()));

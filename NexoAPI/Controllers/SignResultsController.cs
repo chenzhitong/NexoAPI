@@ -24,7 +24,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -32,7 +32,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //transactionHash 检查
@@ -45,7 +45,7 @@ namespace NexoAPI.Controllers
             //当前用户必须在该交易的所属账户的 owners 中
             if (!tx.Account.Owners.Contains(currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"The current user must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The current user must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Current User: {currentUser.Address}" });
             }
 
             var result = _context.SignResult.Where(p => p.Transaction.Hash == transactionHash).ToList().ConvertAll(p => new SignResultResponse() { TransactionHash = p.Transaction.Hash, Signer = p.Signer.Address, Approved = p.Approved, Signature = p.Signature });
@@ -59,7 +59,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -67,13 +67,13 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //signer 检查
             if (currentUser.Address != signer)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Signer must be the current login account.", data = $"Signer: {signer}, Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"Signer must be the current login account.", data = $"Signer: {signer}, Current User: {currentUser.Address}" });
             }
 
             //transactionHash 检查
@@ -86,25 +86,25 @@ namespace NexoAPI.Controllers
             //signer 参数必须在该交易的所属账户的 owners 中
             if (!tx.Account.Owners.Contains(signer))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
             }
 
             //Signature 检查
             if (!Helper.SignatureIsValid(request.Signature))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
             }
 
             //重复值检查
             if (_context.SignResult.Include(p => p.Transaction).Any(p => p.Transaction.Hash == transactionHash && p.Signer.Address == currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"SignResult already exists", data = $"Transaction: {tx.Hash}, Signer: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"SignResult already exists", data = $"Transaction: {tx.Hash}, Signer: {currentUser.Address}" });
             }
 
             //Approved 检查
             if (!bool.TryParse(request.Approved, out bool approved))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Approved incorrect.", data = $"Approved: {request.Approved}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Approved incorrect.", data = $"Approved: {request.Approved}" });
             }
 
             if (approved)
@@ -115,7 +115,7 @@ namespace NexoAPI.Controllers
                 //也许不用验证
                 if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
                 }
             }
             else 

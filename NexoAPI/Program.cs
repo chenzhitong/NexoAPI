@@ -11,7 +11,10 @@ builder.Services.AddDbContext<NexoAPIContext>(options =>
 
 // Add services to the container.
 
-builder.Services.AddControllers().AddNewtonsoftJson().AddJsonOptions(options =>
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(typeof(GlobalExceptionFilter));
+}).AddNewtonsoftJson().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new NexoAPI.DateTimeConverter("yyyy-MM-ddTHH:mm:ssZ"));
 });
@@ -36,15 +39,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<BackgroundTask>();
 
 var app = builder.Build();
-
 app.UseSwagger();
 app.UseSwaggerUI();
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
 

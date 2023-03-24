@@ -34,39 +34,39 @@ namespace NexoAPI.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Address is incorrect.", data = $"Address: {address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Address is incorrect.", data = $"Address: {address}" });
             }
 
             //nonce 检查
             var nonce = Helper.Nonces.FirstOrDefault(p => p.Nonce == request.Nonce);
             if (nonce is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Unauthorized, nonce is incorrect.", data = $"Nonce: {request.Nonce}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Unauthorized", message = "Unauthorized, nonce is incorrect.", data = $"Nonce: {request.Nonce}" });
             }
 
             //nonce 有效期检查
             if ((DateTime.UtcNow - nonce.CreateTime).TotalMinutes > 20)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Unauthorized, nonce has been expired.", data = $"Nonce create time: {nonce.CreateTime}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Unauthorized, nonce has been expired.", data = $"Nonce create time: {nonce.CreateTime}" });
             }
 
             //publicKey 检查
             if (!Helper.PublicKeyIsValid(request.PublicKey))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key incorrect.", data = $"Public key: {request.PublicKey}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key incorrect.", data = $"Public key: {request.PublicKey}" });
             }
 
             //signature 检查
             if (!Helper.SignatureIsValid(request.Signature))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
             }
 
             //检查公钥和地址是否匹配
             var publicKeyToAddress = Contract.CreateSignatureContract(Neo.Cryptography.ECC.ECPoint.Parse(request.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35);
             if (publicKeyToAddress != address)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key and address mismatch." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key and address mismatch." });
             }
 
             //生成待签名的消息
@@ -76,7 +76,7 @@ namespace NexoAPI.Controllers
             //验证签名
             if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"Message: {message}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification failure.", data = $"Message: {message}" });
             }
 
             //创建 User

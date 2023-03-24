@@ -27,7 +27,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -35,13 +35,13 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //仅限当前用户等于owner参数
             if (currentUser.Address != owner)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The 'owner' parameter must be the same as the current user's address", data = $"Owner: {owner}, Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The 'owner' parameter must be the same as the current user's address", data = $"Owner: {owner}, Current User: {currentUser.Address}" });
             }
 
             var list = new List<Account>();
@@ -61,7 +61,7 @@ namespace NexoAPI.Controllers
                 }
                 catch (Exception)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The createTime in cursor is incorrect.", data = $"createTime: {cursorJson["createTime"]}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The createTime in cursor is incorrect.", data = $"createTime: {cursorJson["createTime"]}" });
                 }
 
                 //address 检查
@@ -72,7 +72,7 @@ namespace NexoAPI.Controllers
                 }
                 catch (Exception)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Address is incorrect.", data = $"Address: {address}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Address is incorrect.", data = $"Address: {address}" });
                 }
                 //按时间倒序排序后，筛选从 Cursor Address 开始（含）的数据
                 var startIndex = list.FindIndex(p => p.Address == address);
@@ -95,7 +95,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -103,7 +103,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
@@ -117,7 +117,7 @@ namespace NexoAPI.Controllers
             //仅限当前用户等于owner参数
             if (!account.Owners.Contains(currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
             }
 
             account.Nep17ValueUsd = Helper.GetNep17AssetsValue(address);
@@ -135,7 +135,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -143,7 +143,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //PublicKeys 检查
@@ -151,7 +151,7 @@ namespace NexoAPI.Controllers
             foreach (var pubKey in request.PublicKeys)
             {
                 if (!Helper.PublicKeyIsValid(pubKey))
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Public key incorrect.", data = $"Public key: {pubKey}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key incorrect.", data = $"Public key: {pubKey}" });
                 owners.Add(Contract.CreateSignatureContract(ECPoint.Parse(pubKey, ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35));
             }
             owners = owners.OrderBy(p => p).ToList();
@@ -159,13 +159,13 @@ namespace NexoAPI.Controllers
             //仅限当前用户的publicKey在publicKeys参数中
             if (!request.PublicKeys.Contains(currentUser.PublicKey))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user's public key is not in the public key list.", data = $"Current user's public key: {currentUser.PublicKey}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user's public key is not in the public key list.", data = $"Current user's public key: {currentUser.PublicKey}" });
             }
 
             //Threshold 检查
             if (request.Threshold < 1 || request.Threshold > request.PublicKeys.Length)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Threshold incorrect.", data = $"Threshold: {request.Threshold}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = $"Threshold incorrect.", data = $"Threshold: {request.Threshold}" });
             }
 
             //创建多签账户
@@ -184,7 +184,7 @@ namespace NexoAPI.Controllers
             }
             //else 
             //{
-            //    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Account already exists", data = $"Address: {account.Address}" });
+            //    return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"Account already exists", data = $"Address: {account.Address}" });
             //}
 
             //创建备注
@@ -207,7 +207,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -215,7 +215,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
@@ -229,7 +229,7 @@ namespace NexoAPI.Controllers
             //仅限当前用户等于owner参数
             if (!account.Owners.Contains(currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
             }
 
             //软删除
@@ -260,7 +260,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -268,7 +268,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
@@ -282,7 +282,7 @@ namespace NexoAPI.Controllers
             //仅限当前用户等于owner参数
             if (!account.Owners.Contains(currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
             }
 
             //修改备注

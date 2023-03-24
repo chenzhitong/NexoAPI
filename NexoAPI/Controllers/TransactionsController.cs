@@ -36,7 +36,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -44,13 +44,13 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //仅限当前用户等于owner参数
             if (currentUser.Address != owner)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The 'owner' parameter must be the same as the current user's address", data = $"Owner: {owner}, Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The 'owner' parameter must be the same as the current user's address", data = $"Owner: {owner}, Current User: {currentUser.Address}" });
             }
 
             //account 检查
@@ -63,7 +63,7 @@ namespace NexoAPI.Controllers
             //owner 参数必须在该账户的 owners 中
             if (!accountItem.Owners.Contains(owner))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The owner parameter must be in the owners of the account" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The owner parameter must be in the owners of the account" });
             }
 
             var list = new List<Transaction>();
@@ -103,7 +103,7 @@ namespace NexoAPI.Controllers
                 }
                 catch (Exception)
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The createTime in cursor is incorrect.", data = $"createTime: {cursorJson["createTime"]}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The createTime in cursor is incorrect.", data = $"createTime: {cursorJson["createTime"]}" });
                 }
 
                 //按时间倒序排序后，筛选从 Cursor hash 开始（含）的数据
@@ -123,7 +123,7 @@ namespace NexoAPI.Controllers
             //Authorization 格式检查
             if (!authorization.StartsWith("Bearer "))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -131,7 +131,7 @@ namespace NexoAPI.Controllers
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //account 检查
@@ -144,7 +144,7 @@ namespace NexoAPI.Controllers
             //当前用户的地址必须在该账户的 owners 中
             if (!accountItem.Owners.Contains(currentUser.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The current user's address must be in the owners of the account" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user's address must be in the owners of the account" });
             }
 
             //feePayer 检查
@@ -154,24 +154,24 @@ namespace NexoAPI.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Fee payer is incorrect.", data = $"Fee payer: {request.FeePayer}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Fee payer is incorrect.", data = $"Fee payer: {request.FeePayer}" });
             }
 
             //feePayer 必须等于该账户或在该账户的 owners 中
             if (request.Account != request.FeePayer && !accountItem.Owners.Contains(request.FeePayer))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
             }
 
             //验证ContractHash
             if (!UInt160.TryParse(request.ContractHash, out UInt160 contractHash))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Contract hash is incorrect.", data = $"Contract hash: {request.ContractHash}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash is incorrect.", data = $"Contract hash: {request.ContractHash}" });
             }
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
             if (tokenInfo is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Default.Network}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Default.Network}" });
             }
 
             var tx = new Transaction()
@@ -207,7 +207,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Amount is incorrect.", data = $"Amount: {request.Amount}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Amount is incorrect.", data = $"Amount: {request.Amount}" });
                     }
                     try
                     {
@@ -216,7 +216,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Destination is incorrect.", data = $"Destination: {request.Destination}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Destination is incorrect.", data = $"Destination: {request.Destination}" });
                     }
 
                     var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver);
@@ -227,13 +227,13 @@ namespace NexoAPI.Controllers
             }
             else
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Type is incorrect.", data = $"Type: {request.Type}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Type is incorrect.", data = $"Type: {request.Type}" });
             }
 
             //交易重复性检查
             if (_context.Transaction.Any(p => p.Hash == tx.Hash))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Transaction already exists", data = $"Transaction: {tx.Hash}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"Transaction already exists", data = $"Transaction: {tx.Hash}" });
             }
 
             _context.Transaction.Add(tx);
