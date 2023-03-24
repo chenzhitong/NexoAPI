@@ -69,7 +69,7 @@ namespace NexoAPI.Controllers
             }
 
             //生成待签名的消息
-            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce);
+            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce).Replace("\r\n", "\n");
             var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
 
             //验证签名
@@ -114,7 +114,8 @@ namespace NexoAPI.Controllers
             var publicKey = new KeyPair(privateKey).PublicKey;
             var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress(0x35);
             var nonce = new NoncesController().PostNonce();
-            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce);
+            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce).Replace("\r\n", "\n");
+;
             var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
             var signature = Crypto.Sign(hexStr, privateKey, publicKey.EncodePoint(false)[1..]);
             return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
