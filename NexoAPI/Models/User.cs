@@ -1,4 +1,8 @@
-﻿namespace NexoAPI.Models
+﻿using Neo.Cryptography.ECC;
+using Neo.SmartContract;
+using System.Security.Cryptography.X509Certificates;
+
+namespace NexoAPI.Models
 {
     public class User
     {
@@ -15,6 +19,8 @@
         public ICollection<Remark> Remark { get; set; }
 
         public ICollection<SignResult> SignResult { get; set; }
+
+        public byte[] GetScript() => Contract.CreateSignatureContract(ECPoint.Parse(PublicKey, ECCurve.Secp256r1)).Script;
     }
 
     public class UserRequest

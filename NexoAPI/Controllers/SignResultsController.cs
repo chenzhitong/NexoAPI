@@ -94,6 +94,12 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
             }
 
+            //重复值检查
+            if (_context.SignResult.Include(p => p.Transaction).Any(p => p.Transaction.Hash == transactionHash && p.Signer.Address == currentUser.Address))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"SignResult already exists", data = $"Transaction: {tx.Hash}, Signer: {currentUser.Address}" });
+            }
+
             //Approved 检查
             if (!bool.TryParse(request.Approved, out bool approved))
             {
@@ -104,9 +110,29 @@ namespace NexoAPI.Controllers
             {
                 //验证签名
                 var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
+
+                //也许不用验证
                 if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
                 {
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });
+                }
+            }
+            else 
+            {
+                //FeePayer 拒绝交易，改变交易状态为 Rejected
+                if (currentUser.Address == tx.FeePayer)
+                {
+                    tx.Status = TransactionStatus.Rejected;
+                    _context.Update(tx);
+                }
+
+                //拒绝人数超过可拒绝的最大人数，改变交易状态为 Rejected
+                var maxRejectCount = tx.Account.Owners.Split(',').Length - tx.Account.Threshold;
+                var currentRejectCount = _context.SignResult.Count(p => !p.Approved && p.Transaction.Hash == transactionHash) + 1;
+                if (currentRejectCount > maxRejectCount)
+                {
+                    tx.Status = TransactionStatus.Rejected;
+                    _context.Update(tx);
                 }
             }
 

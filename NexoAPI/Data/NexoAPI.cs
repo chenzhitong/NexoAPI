@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using NexoAPI;
+﻿using Microsoft.EntityFrameworkCore;
 using NexoAPI.Models;
 
 namespace NexoAPI.Data
@@ -21,8 +16,8 @@ namespace NexoAPI.Data
 
         public DbSet<Remark> Remark { get; set; } = default!;
 
-        public DbSet<NexoAPI.Models.Transaction> Transaction { get; set; } = default!;
+        public DbSet<Transaction> Transaction { get; set; } = default!;
 
-        public DbSet<NexoAPI.Models.SignResult> SignResult { get; set; } = default!;
+        public DbSet<SignResult> SignResult { get; set; } = default!;
     }
 }

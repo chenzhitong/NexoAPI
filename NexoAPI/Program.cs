@@ -11,7 +11,7 @@ builder.Services.AddDbContext<NexoAPIContext>(options =>
 
 // Add services to the container.
 
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services.AddControllers().AddNewtonsoftJson().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new NexoAPI.DateTimeConverter("yyyy-MM-ddTHH:mm:ssZ"));
 });

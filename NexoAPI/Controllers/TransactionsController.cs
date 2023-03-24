@@ -14,6 +14,7 @@ using Akka.Actor;
 using System.Security.Policy;
 using NuGet.Protocol.Plugins;
 using Neo.IO;
+using Akka.Util.Internal;
 
 namespace NexoAPI.Controllers
 {
@@ -177,7 +178,7 @@ namespace NexoAPI.Controllers
                 Account = accountItem,
                 FeePayer = request.FeePayer,
                 Creater = currentUser.Address,
-                CreateTime = DateTime.UtcNow, 
+                CreateTime = DateTime.UtcNow,
                 Status = TransactionStatus.Signing,
                 ContractHash = request.ContractHash,
                 ValidUntilBlock = Helper.GetBlockCount().Result + 5760
@@ -190,6 +191,9 @@ namespace NexoAPI.Controllers
                 {
                     tx.Operation = request.Operation;
                     tx.Params = request.Params.ToString();
+                    var rawTx = InvocationFromMultiSignAccount(accountItem, contractHash, request.Operation, request.Params);
+                    tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                    tx.Hash = rawTx.Hash.ToString();
                 }
                 else if (type == TransactionType.Nep17Transfer)
                 {
@@ -214,14 +218,21 @@ namespace NexoAPI.Controllers
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Destination is incorrect.", data = $"Destination: {request.Destination}" });
                     }
 
-                    var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver).Result;
+                    var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver);
                     tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
-                    tx.Hash = rawTx.Hash.ToArray().ToHexString();
+                    tx.Hash = rawTx.Hash.ToString();
+                    tx.Params = string.Empty;
                 }
             }
             else
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = "Type is incorrect.", data = $"Type: {request.Type}" });
+            }
+
+            //交易重复性检查
+            if (_context.Transaction.Any(p => p.Hash == tx.Hash))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Transaction already exists", data = $"Transaction: {tx.Hash}" });
             }
 
             _context.Transaction.Add(tx);
@@ -230,23 +241,56 @@ namespace NexoAPI.Controllers
             return new(new { });
         }
 
-        private static async Task<Neo.Network.P2P.Payloads.Transaction> TransferFromMultiSignAccount(Account account, UInt160 contractHash, decimal amount,  UInt160 receiver)
+        [HttpPost("Test")]
+        public ObjectResult Test([FromBody] JArray array)
+        {
+            return new("ok");
+        }
+
+        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var multiAccount = account.GetScriptHash();
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
 
             var script = contractHash.MakeScript("transfer", multiAccount, receiver, amount * (decimal)Math.Pow(10, tokenInfo.Decimals), string.Empty);
 
-            var signers = new[] 
-            { 
+            var signers = new[]
+            {
                 new Neo.Network.P2P.Payloads.Signer
-                { Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, Account = multiAccount
-                } 
+                { 
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, Account = multiAccount
+                }
             };
 
-            var txManager = await new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).ConfigureAwait(false);
+            var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
+            tx.Witnesses = Array.Empty<Neo.Network.P2P.Payloads.Witness>();
+            return tx;
+        }
 
-            return txManager.Tx;
+        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, UInt160 contractHash, string operation, JArray contractParameters)
+        {
+            var multiAccount = account.GetScriptHash();
+
+            var parameters = new List<ContractParameter>();
+            contractParameters?.ForEach(p => parameters.Add(ContractParameter.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(p.ToString()))));
+
+            byte[] script;
+            using ScriptBuilder scriptBuilder = new();
+            scriptBuilder.EmitDynamicCall(contractHash, operation, parameters.ToArray());
+            script = scriptBuilder.ToArray();
+
+            var signers = new[]
+            {
+                new Neo.Network.P2P.Payloads.Signer
+                { 
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, 
+                    Account = multiAccount
+                }
+            };
+
+            var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
+            tx.Witnesses = Array.Empty<Neo.Network.P2P.Payloads.Witness>();
+            return tx;
         }
     }
 }

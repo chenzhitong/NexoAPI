@@ -11,6 +11,8 @@
         public bool Approved { get; set; }
 
         public string Signature { get; set; }
+
+        public bool InWitness { get; set; }
     }
 
     public class SignResultRequest

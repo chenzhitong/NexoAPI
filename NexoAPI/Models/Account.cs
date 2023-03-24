@@ -13,6 +13,8 @@ namespace NexoAPI.Models
 
         public string Owners { get; set; }
 
+        public string PublicKeys { get; set; }
+
         public int Threshold { get; set; }
 
         public ICollection<Remark> Remark { get; set; }
@@ -23,9 +25,9 @@ namespace NexoAPI.Models
         [NotMapped]
         public decimal Nep17ValueUsd { get; set; }
 
-        public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
+        public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
 
-        public byte[] GetScript() => Contract.CreateMultiSigContract(Threshold, Owners.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
+        public byte[] GetScript() => Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
     }
 
     public class AccountRequest

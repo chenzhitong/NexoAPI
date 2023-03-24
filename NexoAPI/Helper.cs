@@ -23,7 +23,7 @@ namespace NexoAPI
 
         public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
 
-        public static bool SignatureIsValid(string input) => new Regex("^([0-9a-f][0-9a-f])+$").IsMatch(input);
+        public static bool SignatureIsValid(string input) => new Regex("^[0-9a-f]{128}$").IsMatch(input);
 
         public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
 

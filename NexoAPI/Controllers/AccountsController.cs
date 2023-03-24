@@ -173,26 +173,29 @@ namespace NexoAPI.Controllers
             var account = new Account()
             {
                 Owners = string.Join(',', owners),
+                PublicKeys = string.Join(',', request.PublicKeys),
                 Threshold = request.Threshold,
                 Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress(0x35)
             };
 
             //重复值检查
-            if (_context.Account.Any(p => p.Address == account.Address))
+            if (!_context.Account.Any(p => p.Address == account.Address))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Account already exists", data = $"Address: {account.Address}" });
+                _context.Account.Add(account);
             }
-
-            _context.Account.Add(account);
+            //else 
+            //{
+            //    return StatusCode(StatusCodes.Status400BadRequest, new { code = 400, message = $"Account already exists", data = $"Address: {account.Address}" });
+            //}
 
             //创建备注
-
             _context.Remark.Add(new Remark()
             {
                 User = currentUser,
                 Account = account,
                 RemarkName = request.Remark,
-                CreateTime = DateTime.UtcNow
+                CreateTime = DateTime.UtcNow,
+                IsDeleted = false
             });
             await _context.SaveChangesAsync();
 

@@ -1,4 +1,4 @@
-﻿using Neo.Json;
+﻿using Newtonsoft.Json.Linq;
 
 namespace NexoAPI.Models
 {
@@ -51,7 +51,7 @@ namespace NexoAPI.Models
 
         public string Operation { get; set; } = string.Empty;
 
-        public Params[] Params { get; set; } = new Params[0];
+        public JArray Params { get; set; }
 
         public string Amount { get; set; } = string.Empty;
 
