@@ -38,7 +38,7 @@ namespace NexoAPI.Controllers
             var tx = _context.Transaction.Include(p => p.Account).FirstOrDefault(p => p.Hash == transactionHash);
             if (tx is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Transaction {transactionHash} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {transactionHash} does not exist." });
             }
 
             //当前用户必须在该交易的所属账户的 owners 中
@@ -78,7 +78,7 @@ namespace NexoAPI.Controllers
             var tx = _context.Transaction.Include(p => p.Account).FirstOrDefault(p => p.Hash == transactionHash);
             if (tx is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Transaction {transactionHash} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {transactionHash} does not exist." });
             }
 
             //signer 参数必须在该交易的所属账户的 owners 中

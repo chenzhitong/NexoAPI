@@ -56,7 +56,7 @@ namespace NexoAPI.Controllers
             var accountItem = _context.Account.FirstOrDefault(p => p.Address == account);
             if (accountItem is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Multi-Sign Address {account} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {account} does not exist." });
             }
 
             //owner 参数必须在该账户的 owners 中
@@ -136,7 +136,7 @@ namespace NexoAPI.Controllers
             var accountItem = _context.Account.FirstOrDefault(p => p.Address == request.Account);
             if (accountItem is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Multi-Sign Address {request.Account} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {request.Account} does not exist." });
             }
 
             //当前用户的地址必须在该账户的 owners 中

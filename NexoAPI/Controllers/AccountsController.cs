@@ -110,7 +110,7 @@ namespace NexoAPI.Controllers
             //Address 检查
             if (account is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Multi-Sign Address {address} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
 
             //仅限当前用户等于owner参数
@@ -220,7 +220,7 @@ namespace NexoAPI.Controllers
             //Address 检查
             if (account is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Multi-Sign Address {address} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
 
             //仅限当前用户等于owner参数
@@ -272,7 +272,7 @@ namespace NexoAPI.Controllers
             //Address 检查
             if (account is null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new { code = 404, message = $"Multi-Sign Address {address} does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
 
             //仅限当前用户等于owner参数
