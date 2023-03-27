@@ -26,7 +26,7 @@ namespace NexoAPI
                 if (context.Response.StatusCode == 404)
                 {
                     context.Response.ContentType = "application/json";
-
+                    context.Response.StatusCode = 400;
                     var json = JsonConvert.SerializeObject(new { code = "NotFound", message = "404 NotFound", data = $"Path: {context.Request.Path}" });
                     await context.Response.WriteAsync(json);
                 }
