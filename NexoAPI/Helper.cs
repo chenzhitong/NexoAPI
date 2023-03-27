@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.IO;
 using Neo.Network.RPC;
@@ -9,21 +10,34 @@ using NexoAPI.Models;
 using NLog;
 using NuGet.Protocol;
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace NexoAPI
 {
-    public static class Helper
+    public static partial class Helper
     {
         private static readonly uint Network = 0x334F454Eu;
 
         public static List<NonceInfo> Nonces = new();
 
-        public static bool PublicKeyIsValid(string input) => new Regex("^(0[23][0-9a-f]{64})$").IsMatch(input);
+        [GeneratedRegex("^Bearer [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")]
+        private static partial Regex AuthorizationRegex();
+        public static bool AuthorizationIsValid(string input, out string output)
+        {
+            output = input.Replace("Bearer ", string.Empty);
+            return AuthorizationRegex().IsMatch(input);
+        }
 
-        public static bool SignatureIsValid(string input) => new Regex("^[0-9a-f]{128}$").IsMatch(input);
+        [GeneratedRegex("^0[23][0-9a-f]{64}$")]
+        private static partial Regex PublicKeyRegex();
+        public static bool PublicKeyIsValid(string input) => PublicKeyRegex().IsMatch(input);
+
+        [GeneratedRegex("^[0-9a-f]{128}$")]
+        private static partial Regex SignatureRegex();
+        public static bool SignatureIsValid(string input) => SignatureRegex().IsMatch(input);
 
         public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
 
@@ -84,8 +98,8 @@ namespace NexoAPI
             byte[] buffer = pubkey.EncodePoint(false);
             using var ecdsa = ECDsa.Create(new ECParameters
             {
-                Curve = System.Security.Cryptography.ECCurve.NamedCurves.nistP256,
-                Q = new System.Security.Cryptography.ECPoint
+                Curve = ECCurve.NamedCurves.nistP256,
+                Q = new ECPoint
                 {
                     X = buffer[1..33],
                     Y = buffer[33..]
@@ -134,7 +148,7 @@ namespace NexoAPI
         {
             var scriptHash = address.ToScriptHash(0x35).ToString();
             // 查询该地址上所有NEP-17资产的合约地址
-            var response = Helper.PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
+            var response = PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             var list = new List<TokenBalance>();
             if (jobject?["result"]?["result"] is null)
@@ -143,12 +157,12 @@ namespace NexoAPI
             {
                 var asset = item["asset"]?.ToString() ?? string.Empty;
                 var amount = ChangeToDecimal(item["balance"]?.ToString() ?? "0");
-                var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(asset).Result;
+                var tokenInfo = new Nep17API(Client).GetTokenInfoAsync(asset).Result;
                 var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
                 list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
             }
 
-            var response2 = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", list.Select(p => p.ContractHash).ToArray().ToJson()));
+            var response2 = JToken.Parse(PostWebRequest("https://onegate.space/api/quote?convert=usd", list.Select(p => p.ContractHash).ToArray().ToJson()));
             var sum = 0m;
             for (int i = 0; i < list.Count; i++)
             {
@@ -159,7 +173,7 @@ namespace NexoAPI
         }
         public static decimal ChangeToDecimal(string strData)
         {
-            return strData.Contains('E', StringComparison.OrdinalIgnoreCase) ? Convert.ToDecimal(decimal.Parse(strData.ToString(), System.Globalization.NumberStyles.Float)) : Convert.ToDecimal(strData);
+            return strData.Contains('E', StringComparison.OrdinalIgnoreCase) ? Convert.ToDecimal(decimal.Parse(strData.ToString(), NumberStyles.Float)) : Convert.ToDecimal(strData);
         }
     }
 

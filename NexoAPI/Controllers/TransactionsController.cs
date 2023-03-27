@@ -34,13 +34,12 @@ namespace NexoAPI.Controllers
         public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string? signable, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
@@ -121,13 +120,12 @@ namespace NexoAPI.Controllers
         public async Task<ObjectResult> PostTransaction([FromHeader] string authorization, TransactionRequest request)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {

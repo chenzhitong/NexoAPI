@@ -39,10 +39,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<BackgroundTask>();
 
 var app = builder.Build();
+app.UseMiddleware<BadRequestMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-

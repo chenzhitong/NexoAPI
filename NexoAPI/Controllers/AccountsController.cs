@@ -6,6 +6,7 @@ using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
+using System.Net;
 
 namespace NexoAPI.Controllers
 {
@@ -24,18 +25,9 @@ namespace NexoAPI.Controllers
         [HttpGet]
         public ObjectResult GetAccountList([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
         {
-            //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!CheckAuthorization(_context, authorization, out ObjectResult result, out User currentUser))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
-            }
-
-            //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
-            var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
-            if (currentUser is null)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return result;
             }
 
             //仅限当前用户等于owner参数
@@ -93,13 +85,12 @@ namespace NexoAPI.Controllers
         public ObjectResult GetAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
@@ -133,13 +124,12 @@ namespace NexoAPI.Controllers
         public async Task<ObjectResult> PostAccount([FromHeader] string authorization, [FromBody] AccountRequest request)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
@@ -205,13 +195,12 @@ namespace NexoAPI.Controllers
         public async Task<ObjectResult> DeleteAccount([FromHeader] string authorization, string address)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
@@ -258,13 +247,12 @@ namespace NexoAPI.Controllers
         public async Task<ObjectResult> PutAccount([FromHeader] string authorization, [FromBody] SetRemarkViewModel body, string address)
         {
             //Authorization 格式检查
-            if (!authorization.StartsWith("Bearer "))
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
-            var token = authorization.Replace("Bearer ", string.Empty);
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
@@ -305,6 +293,28 @@ namespace NexoAPI.Controllers
             await _context.SaveChangesAsync();
 
             return new(new { });
+        }
+
+
+        public bool CheckAuthorization(NexoAPIContext _context, string authorization, out ObjectResult result, out User currentUser)
+        {
+            //Authorization 格式检查
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
+            {
+                result = StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                currentUser = null;
+                return false;
+            }
+
+            //Authorization 有效性检查
+            currentUser = _context.User.FirstOrDefault(p => p.Token == token);
+            if (currentUser is null)
+            {
+                result = StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return false;
+            }
+            result = null;
+            return true;
         }
     }
 
