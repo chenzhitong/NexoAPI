@@ -25,9 +25,17 @@ namespace NexoAPI.Controllers
         [HttpGet]
         public ObjectResult GetAccountList([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
         {
-            if (!CheckAuthorization(_context, authorization, out ObjectResult result, out User currentUser))
+            //Authorization 格式检查
+            if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return result;
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+            }
+
+            //Authorization 有效性检查
+            var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
+            if (currentUser is null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
             }
 
             //仅限当前用户等于owner参数
@@ -293,28 +301,6 @@ namespace NexoAPI.Controllers
             await _context.SaveChangesAsync();
 
             return new(new { });
-        }
-
-
-        public bool CheckAuthorization(NexoAPIContext _context, string authorization, out ObjectResult result, out User currentUser)
-        {
-            //Authorization 格式检查
-            if (!Helper.AuthorizationIsValid(authorization, out string token))
-            {
-                result = StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
-                currentUser = null;
-                return false;
-            }
-
-            //Authorization 有效性检查
-            currentUser = _context.User.FirstOrDefault(p => p.Token == token);
-            if (currentUser is null)
-            {
-                result = StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
-                return false;
-            }
-            result = null;
-            return true;
         }
     }
 
