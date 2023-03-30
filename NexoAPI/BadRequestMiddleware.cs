@@ -30,14 +30,6 @@ namespace NexoAPI
                     var json = JsonConvert.SerializeObject(new { code = "NotFound", message = "404 NotFound", data = $"Path: {context.Request.Path}" });
                     await context.Response.WriteAsync(json);
                 }
-                else if (context.Response.StatusCode == 400)
-                {
-                    var json = JsonConvert.SerializeObject(new { code = "InvalidParameter", message = "InvalidParameter", data = $"" });
-
-                    context.Response.ContentLength = Encoding.UTF8.GetByteCount(json);
-
-                    await context.Response.WriteAsync(json);
-                }
             }
             catch (Exception ex)
             {

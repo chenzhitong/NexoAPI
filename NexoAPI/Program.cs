@@ -13,7 +13,8 @@ builder.Services.AddDbContext<NexoAPIContext>(options =>
 
 builder.Services.AddControllers(options =>
 {
-    options.Filters.Add(typeof(GlobalExceptionFilter));
+    options.Filters.Add<ValidationFilter>();
+    options.Filters.Add<GlobalExceptionFilter>();
 }).AddNewtonsoftJson().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new NexoAPI.DateTimeConverter("yyyy-MM-ddTHH:mm:ssZ"));
