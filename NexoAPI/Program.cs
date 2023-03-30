@@ -37,12 +37,21 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<BackgroundTask>();
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllDomain",
+        builder => builder
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetIsOriginAllowed(_ => true)
+            .AllowAnyHeader());
+});
 var app = builder.Build();
 app.UseMiddleware<BadRequestMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 app.UseAuthorization();
+app.UseCors("AllowAllDomain");
 app.MapControllers();
 app.Run();
