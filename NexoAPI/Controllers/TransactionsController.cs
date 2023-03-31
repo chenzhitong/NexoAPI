@@ -37,7 +37,7 @@ namespace NexoAPI.Controllers
             var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Unauthorized", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
@@ -124,7 +124,7 @@ namespace NexoAPI.Controllers
             var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Unauthorized", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
