@@ -292,14 +292,14 @@ namespace NexoAPI.Controllers
                 {
                     User = currentUser,
                     Account = account,
-                    RemarkName = body.Remark,
+                    RemarkName = body.Remark ?? string.Empty,
                     CreateTime = DateTime.UtcNow,
                     IsDeleted = true
                 });
             }
             else
             {
-                remark.RemarkName = body.Remark;
+                remark.RemarkName = body.Remark ?? string.Empty;
                 _context.Update(remark);
             }
             await _context.SaveChangesAsync();
