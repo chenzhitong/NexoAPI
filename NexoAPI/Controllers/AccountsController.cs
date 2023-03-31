@@ -6,6 +6,7 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
+using NexoAPI.Migrations;
 using NexoAPI.Models;
 using System.Net;
 
@@ -200,6 +201,7 @@ namespace NexoAPI.Controllers
             else
             {
                 remark.RemarkName = request.Remark;
+                remark.IsDeleted = false;
                 _context.Update(remark);
             }
 
