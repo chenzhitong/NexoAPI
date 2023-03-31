@@ -8,12 +8,13 @@ namespace NexoAPI
     {
         public void OnResultExecuting(ResultExecutingContext context)
         {
-            var msg = new StringBuilder();
-
-            context.ModelState.Where(p => p.Value?.Errors.Count > 0).ToList().ForEach(error => error.Value?.Errors.ToList().ForEach(p => msg.Append($"{p.ErrorMessage} ")));
-
-            context.Result = new BadRequestObjectResult(new { Code = "InvalidParameter", Message = msg.ToString().Trim(), Data = string.Empty });
-
+            var errors = context.ModelState.Where(p => p.Value?.Errors.Count > 0).ToList();
+            if (errors.Count > 0)
+            {
+                var msg = new StringBuilder();
+                errors.ForEach(error => error.Value?.Errors.ToList().ForEach(p => msg.Append($"{p.ErrorMessage} ")));
+                context.Result = new BadRequestObjectResult(new { Code = "InvalidParameter", Message = msg.ToString().Trim(), Data = string.Empty });
+            }
             return;
         }
 

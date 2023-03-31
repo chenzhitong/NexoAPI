@@ -48,7 +48,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 var app = builder.Build();
-app.UseMiddleware<BadRequestMiddleware>();
+app.UseMiddleware<NotFoundMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();

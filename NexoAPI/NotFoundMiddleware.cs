@@ -6,13 +6,13 @@ using System.Text;
 
 namespace NexoAPI
 {
-    public class BadRequestMiddleware
+    public class NotFoundMiddleware
     {
         private readonly RequestDelegate _next;
 
         public readonly Logger _logger;
 
-        public BadRequestMiddleware(RequestDelegate next)
+        public NotFoundMiddleware(RequestDelegate next)
         {
             _next = next;
             _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
