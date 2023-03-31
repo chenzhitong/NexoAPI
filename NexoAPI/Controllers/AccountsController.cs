@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Akka.Actor;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Neo.Cryptography.ECC;
 using Neo.SmartContract;
@@ -177,26 +178,31 @@ namespace NexoAPI.Controllers
                 Threshold = request.Threshold,
                 Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress(0x35)
             };
-
+            var accountItem = _context.Account.FirstOrDefault(p => p.Address == account.Address);
             //重复值检查
-            if (!_context.Account.Any(p => p.Address == account.Address))
+            if (accountItem is null)
             {
                 _context.Account.Add(account);
             }
-            //else 
-            //{
-            //    return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"Account already exists", data = $"Address: {account.Address}" });
-            //}
-
-            //创建备注
-            _context.Remark.Add(new Remark()
+            //创建和修改备注
+            var remark = _context.Remark.FirstOrDefault(p => p.Account.Address == account.Address && p.User.Address == currentUser.Address);
+            if (remark is null)
             {
-                User = currentUser,
-                Account = account,
-                RemarkName = request.Remark,
-                CreateTime = DateTime.UtcNow,
-                IsDeleted = false
-            });
+                _context.Remark.Add(new Remark()
+                {
+                    User = currentUser,
+                    Account = account,
+                    RemarkName = request.Remark,
+                    CreateTime = DateTime.UtcNow,
+                    IsDeleted = false
+                });
+            }
+            else
+            {
+                remark.RemarkName = request.Remark;
+                _context.Update(remark);
+            }
+
             await _context.SaveChangesAsync();
 
             return new(new { });
@@ -296,7 +302,7 @@ namespace NexoAPI.Controllers
                     Account = account,
                     RemarkName = body.Remark,
                     CreateTime = DateTime.UtcNow,
-                    IsDeleted = true
+                    IsDeleted = false
                 });
             }
             else
