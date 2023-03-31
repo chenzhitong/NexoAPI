@@ -10,6 +10,13 @@ namespace NexoAPI.Controllers
     [ApiController]
     public class Nep17BalancesController : Controller
     {
+        private readonly IConfiguration _config;
+
+        public Nep17BalancesController(IConfiguration config)
+        {
+            _config = config;
+        }
+
         [HttpGet]
         public ObjectResult GetList(string address)
         {
@@ -23,7 +30,7 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Address is incorrect.", data = $"Address: {address}" });
             }
-            var response = Helper.PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
+            var response = Helper.PostWebRequest(_config["OneGateExplorerAPI"], "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             if ((double)(jobject?["result"]?["totalCount"] ?? 0) > 100)
             {

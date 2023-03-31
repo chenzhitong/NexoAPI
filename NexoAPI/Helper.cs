@@ -19,8 +19,6 @@ namespace NexoAPI
 {
     public static partial class Helper
     {
-        private static readonly uint Network = 0x334F454Eu;
-
         public static string AuthFormatError = "Authorization format error. Http Header Example: Authorization: Bearer 2f68dbbf-519d-4f01-9636-e2421b68f379";
 
         public static List<NonceInfo> Nonces = new();
@@ -64,11 +62,11 @@ namespace NexoAPI
             static string Num2hexstring(long num, int size) => BitConverter.GetBytes(num).Take(size).ToArray().ToHexString();
         }
 
-        public static byte[] GetSignData(UInt256 txHash)
+        public static byte[] GetSignData(IConfiguration _config, UInt256 txHash)
         {
             using MemoryStream ms = new();
             using BinaryWriter writer = new(ms);
-            writer.Write(Network);
+            writer.Write(_config["Network"]);
             writer.Write(txHash);
             writer.Flush();
             return ms.ToArray();
@@ -146,11 +144,12 @@ namespace NexoAPI
 
         public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
-        public static decimal GetNep17AssetsValue(string address)
+
+        public static decimal GetNep17AssetsValue(IConfiguration _config, string address)
         {
             var scriptHash = address.ToScriptHash(0x35).ToString();
             // 查询该地址上所有NEP-17资产的合约地址
-            var response = PostWebRequest("https://explorer.onegate.space/api", "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
+            var response = PostWebRequest(_config["OneGateExplorerAPI"], "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             var list = new List<TokenBalance>();
             if (jobject?["result"]?["result"] is null)
@@ -164,7 +163,7 @@ namespace NexoAPI
                 list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
             }
 
-            var response2 = JToken.Parse(PostWebRequest("https://onegate.space/api/quote?convert=usd", list.Select(p => p.ContractHash).ToArray().ToJson()));
+            var response2 = JToken.Parse(PostWebRequest(_config["OneGateQuoteAPI"], list.Select(p => p.ContractHash).ToArray().ToJson()));
             var sum = 0m;
             for (int i = 0; i < list.Count; i++)
             {

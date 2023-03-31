@@ -12,6 +12,13 @@ namespace NexoAPI.Controllers
     [ApiController]
     public class Nep17TokensController : Controller
     {
+        private readonly IConfiguration _config;
+
+        public Nep17TokensController(IConfiguration config)
+        {
+            _config = config;
+        }
+
         [HttpGet]
         public ObjectResult GetList([FromQuery] string[] contractHashes)
         {
@@ -36,7 +43,8 @@ namespace NexoAPI.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash format error.", data = $"Contract hash: {item}" });
                 }
             }
-            var response = JToken.Parse(Helper.PostWebRequest("https://onegate.space/api/quote?convert=usd", contractHashes.ToJson()));
+            
+            var response = JToken.Parse(Helper.PostWebRequest(_config["OneGateQuoteAPI"], contractHashes.ToJson()));
             for (int i = 0; i < result.Count; i++)
             {
                 result[i].PriceUsd = response?[i]?.ToString() ?? "0";
