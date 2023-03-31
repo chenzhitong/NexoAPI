@@ -110,8 +110,8 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
-            var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
-            
+            //标记为已删除的，仍可手动查询账户信息
+            var account = _context.Account.Include(p => p.Remark).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
@@ -228,7 +228,8 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
-            var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
+            //标记为已删除的，仍可重复删除
+            var account = _context.Account.Include(p => p.Remark).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
@@ -281,7 +282,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
-            var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
+            var account = _context.Account.Include(p => p.Remark).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
@@ -311,6 +312,7 @@ namespace NexoAPI.Controllers
             else
             {
                 remark.RemarkName = body.Remark;
+                remark.IsDeleted = false;
                 _context.Update(remark);
             }
             await _context.SaveChangesAsync();
