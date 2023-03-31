@@ -18,19 +18,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet]
-        public ObjectResult GetTransactionCount([FromHeader] string authorization, string account, string owner, string? signable)
+        public ObjectResult GetTransactionCount(string account, string owner, string? signable)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             //仅限当前用户等于owner参数

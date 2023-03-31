@@ -31,19 +31,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet]
-        public ObjectResult GetTransactionList([FromHeader] string authorization, string account, string owner, string? signable, int? skip, int? limit, string? cursor)
+        public ObjectResult GetTransactionList(string account, string owner, string? signable, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             //仅限当前用户等于owner参数
@@ -117,19 +118,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ObjectResult> PostTransaction([FromHeader] string authorization, TransactionRequest request)
+        public async Task<ObjectResult> PostTransaction(TransactionRequest request)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             //account 检查

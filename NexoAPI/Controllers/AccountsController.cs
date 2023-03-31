@@ -23,19 +23,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet]
-        public ObjectResult GetAccountList([FromHeader] string authorization, string owner, int? skip, int? limit, string? cursor)
+        public ObjectResult GetAccountList(string owner, int? skip, int? limit, string? cursor)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             //仅限当前用户等于owner参数
@@ -90,19 +91,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpGet("{address}")]
-        public ObjectResult GetAccount([FromHeader] string authorization, string address)
+        public ObjectResult GetAccount(string address)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
@@ -126,22 +128,21 @@ namespace NexoAPI.Controllers
         [HttpGet("valuation-test/{address}")]
         public ObjectResult GetAccountValuation(string address) => new(Helper.GetNep17AssetsValue(address));
 
-        // Swagger has bugs, do not test in swagger
-        // https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/1938#issuecomment-1205715331
         [HttpPost]
-        public async Task<ObjectResult> PostAccount([FromHeader] string authorization, [FromBody] AccountRequest request)
+        public async Task<ObjectResult> PostAccount([FromBody] AccountRequest request)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             //PublicKeys 检查
@@ -200,19 +201,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpDelete("{address}")]
-        public async Task<ObjectResult> DeleteAccount([FromHeader] string authorization, string address)
+        public async Task<ObjectResult> DeleteAccount(string address)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);
@@ -252,19 +254,20 @@ namespace NexoAPI.Controllers
         }
 
         [HttpPut("{address}/actions/set-remark")]
-        public async Task<ObjectResult> PutAccount([FromHeader] string authorization, [FromBody] SetRemarkViewModel body, string address)
+        public async Task<ObjectResult> PutAccount([FromBody] SetRemarkViewModel body, string address)
         {
             //Authorization 格式检查
+            var authorization = Request.Headers["Authorization"].ToString();
             if (!Helper.AuthorizationIsValid(authorization, out string token))
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Authorization format error", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = Helper.AuthFormatError, data = $"Authorization: {authorization}" });
             }
 
             //Authorization 有效性检查
             var currentUser = _context.User.FirstOrDefault(p => p.Token == token);
             if (currentUser is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Authorization: {authorization}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
             var account = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.First(r => r.User == currentUser).IsDeleted).FirstOrDefault(p => p.Address == address);

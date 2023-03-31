@@ -21,6 +21,8 @@ namespace NexoAPI
     {
         private static readonly uint Network = 0x334F454Eu;
 
+        public static string AuthFormatError = "Authorization format error. Http Header Example: Authorization: Bearer 2f68dbbf-519d-4f01-9636-e2421b68f379";
+
         public static List<NonceInfo> Nonces = new();
 
         [GeneratedRegex("^Bearer [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")]
