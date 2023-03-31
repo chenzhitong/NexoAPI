@@ -36,7 +36,7 @@ namespace NexoAPI.Models
 
         public int Threshold { get; set; }
 
-        public string Remark { get; set; }
+        public string? Remark { get; set; }
     }
 
     public class AccountResponse
