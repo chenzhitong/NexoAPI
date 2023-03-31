@@ -11,7 +11,7 @@ namespace NexoAPI.Models
 
         public Account Account { get; set; }
 
-        public string RemarkName { get; set; }
+        public string? RemarkName { get; set; }
 
         public DateTime CreateTime { get; set; }
 

@@ -292,14 +292,14 @@ namespace NexoAPI.Controllers
                 {
                     User = currentUser,
                     Account = account,
-                    RemarkName = body.Remark ?? string.Empty,
+                    RemarkName = body.Remark,
                     CreateTime = DateTime.UtcNow,
                     IsDeleted = true
                 });
             }
             else
             {
-                remark.RemarkName = body.Remark ?? string.Empty;
+                remark.RemarkName = body.Remark;
                 _context.Update(remark);
             }
             await _context.SaveChangesAsync();
@@ -310,6 +310,6 @@ namespace NexoAPI.Controllers
 
     public class SetRemarkViewModel
     {
-        public string? Remark { get; set; } = string.Empty;
+        public string? Remark { get; set; }
     }
 }
