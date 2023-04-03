@@ -39,7 +39,7 @@ namespace NexoAPI
         private static partial Regex SignatureRegex();
         public static bool SignatureIsValid(string input) => SignatureRegex().IsMatch(input);
 
-        public static RpcClient Client = new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null);
+        public static RpcClient Client = new(new Uri("http://seed1.neo.org:10332"), null, null, null);
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
@@ -62,11 +62,11 @@ namespace NexoAPI
             static string Num2hexstring(long num, int size) => BitConverter.GetBytes(num).Take(size).ToArray().ToHexString();
         }
 
-        public static byte[] GetSignData(UInt256 txHash)
+        public static byte[] GetSignData(IConfiguration _config, UInt256 txHash)
         {
             using MemoryStream ms = new();
             using BinaryWriter writer = new(ms);
-            writer.Write(ConfigHelper.AppSetting("Network"));
+            writer.Write(_config["Network"]);
             writer.Write(txHash);
             writer.Flush();
             return ms.ToArray();
@@ -145,11 +145,11 @@ namespace NexoAPI
         public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
 
-        public static decimal GetNep17AssetsValue(string address)
+        public static decimal GetNep17AssetsValue(IConfiguration _config, string address)
         {
             var scriptHash = address.ToScriptHash(0x35).ToString();
             // 查询该地址上所有NEP-17资产的合约地址
-            var response = PostWebRequest(ConfigHelper.AppSetting("OneGateExplorerAPI"), "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
+            var response = PostWebRequest(_config["OneGateExplorerAPI"], "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);
             var list = new List<TokenBalance>();
             if (jobject?["result"]?["result"] is null)
@@ -163,7 +163,7 @@ namespace NexoAPI
                 list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
             }
 
-            var response2 = JToken.Parse(PostWebRequest(ConfigHelper.AppSetting("OneGateQuoteAPI"), list.Select(p => p.ContractHash).ToArray().ToJson()));
+            var response2 = JToken.Parse(PostWebRequest(_config["OneGateQuoteAPI"], list.Select(p => p.ContractHash).ToArray().ToJson()));
             var sum = 0m;
             for (int i = 0; i < list.Count; i++)
             {

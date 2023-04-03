@@ -18,10 +18,12 @@ namespace NexoAPI.Controllers
     public partial class AccountsController : ControllerBase
     {
         private readonly NexoAPIContext _context;
+        private readonly IConfiguration _config;
 
-        public AccountsController(NexoAPIContext context)
+        public AccountsController(NexoAPIContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         [HttpGet]
@@ -87,7 +89,7 @@ namespace NexoAPI.Controllers
                 list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
             }
             list.ForEach(p => p.Remark = p.Remark.Where(p => p.User == currentUser).ToList());
-            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new AccountResponse(p));
+            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new AccountResponse(_config, p));
             return new ObjectResult(result);
         }
 
@@ -128,12 +130,12 @@ namespace NexoAPI.Controllers
             }
 
             account.Remark = account.Remark.Where(p => p.User == currentUser).ToList();
-            account.Nep17ValueUsd = Helper.GetNep17AssetsValue( address);
-            return new ObjectResult(new AccountResponse(account));
+            account.Nep17ValueUsd = Helper.GetNep17AssetsValue(_config, address);
+            return new ObjectResult(new AccountResponse(_config, account));
         }
 
         [HttpGet("valuation-test/{address}")]
-        public ObjectResult GetAccountValuation(string address) => new(Helper.GetNep17AssetsValue(address));
+        public ObjectResult GetAccountValuation(string address) => new(Helper.GetNep17AssetsValue(_config, address));
 
         [HttpPost]
         public async Task<ObjectResult> PostAccount([FromBody] AccountRequest request)

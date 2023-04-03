@@ -41,14 +41,14 @@ namespace NexoAPI.Models
 
     public class AccountResponse
     {
-        public AccountResponse(Account p)
+        public AccountResponse(IConfiguration _config, Account p)
         {
             Address = p.Address;
             Owners = p.Owners.Split(',');
             Threshold = p.Threshold;
             Remark = p.Remark.First().RemarkName;
             CreateTime = p.Remark.First().CreateTime;
-            Nep17ValueUsd = Helper.GetNep17AssetsValue(p.Address);
+            Nep17ValueUsd = Helper.GetNep17AssetsValue(_config, p.Address);
         }
 
         public string Address { get; set; }

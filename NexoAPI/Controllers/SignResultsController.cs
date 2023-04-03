@@ -13,8 +13,11 @@ namespace NexoAPI.Controllers
     {
         private readonly NexoAPIContext _context;
 
-        public SignResultsController(NexoAPIContext context)
+        private readonly IConfiguration _config;
+
+        public SignResultsController(NexoAPIContext context, IConfiguration config)
         {
+            _config = config;
             _context = context;
         }
 
@@ -110,7 +113,7 @@ namespace NexoAPI.Controllers
             if (approved)
             {
                 //验证签名
-                var message = Helper.GetSignData( new UInt256(tx.Hash.HexToBytes()));
+                var message = Helper.GetSignData(_config, new UInt256(tx.Hash.HexToBytes()));
 
                 //也许不用验证
                 if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
