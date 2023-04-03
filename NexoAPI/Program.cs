@@ -24,7 +24,6 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<GlobalExceptionFilter>();
 }).AddNewtonsoftJson(options =>
 {
-    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
     options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
     options.SerializerSettings.DateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
 });
