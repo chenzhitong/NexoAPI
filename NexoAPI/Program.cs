@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
 using NexoAPI;
 using NexoAPI.Data;
 using System.ComponentModel;
@@ -19,9 +22,11 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidationFilter>();
     options.Filters.Add<GlobalExceptionFilter>();
-}).AddNewtonsoftJson().AddJsonOptions(options =>
+}).AddNewtonsoftJson(options =>
 {
-    options.JsonSerializerOptions.Converters.Add(new NexoAPI.DateTimeConverter("yyyy-MM-ddTHH:mm:ssZ"));
+    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+    options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
+    options.SerializerSettings.DateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
 });
 builder.Services.AddSwaggerGen(c =>
 {
