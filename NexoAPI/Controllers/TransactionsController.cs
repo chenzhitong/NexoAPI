@@ -193,9 +193,16 @@ namespace NexoAPI.Controllers
                 {
                     tx.Operation = request.Operation;
                     tx.Params = request.Params.ToString();
-                    var rawTx = InvocationFromMultiSignAccount(accountItem, contractHash, request.Operation, request.Params);
-                    tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
-                    tx.Hash = rawTx.Hash.ToString();
+                    try
+                    {
+                        var rawTx = InvocationFromMultiSignAccount(accountItem, contractHash, request.Operation, request.Params);
+                        tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                        tx.Hash = rawTx.Hash.ToString();
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Unsupported parameters.", data = ex.Message });
+                    }
                 }
                 else if (type == TransactionType.Nep17Transfer)
                 {
@@ -259,7 +266,7 @@ namespace NexoAPI.Controllers
             var signers = new[]
             {
                 new Neo.Network.P2P.Payloads.Signer
-                { 
+                {
                     Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, Account = multiAccount
                 }
             };
@@ -274,7 +281,18 @@ namespace NexoAPI.Controllers
             var multiAccount = account.GetScriptHash();
 
             var parameters = new List<ContractParameter>();
-            contractParameters?.ForEach(p => parameters.Add(ContractParameter.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(p.ToString()))));
+            foreach (var p in contractParameters)
+            {
+                var t = Neo.Json.JObject.Parse(p.ToString()) as Neo.Json.JObject;
+                try
+                {
+                    parameters.Add(ContractParameter.FromJson(t));
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException(t.ToString());
+                }
+            }
 
             byte[] script;
             using ScriptBuilder scriptBuilder = new();
@@ -284,8 +302,8 @@ namespace NexoAPI.Controllers
             var signers = new[]
             {
                 new Neo.Network.P2P.Payloads.Signer
-                { 
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, 
+                {
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
                     Account = multiAccount
                 }
             };
