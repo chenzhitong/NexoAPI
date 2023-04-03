@@ -110,13 +110,17 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
-            //标记为已删除的，仍可手动查询账户信息
             var account = _context.Account.Include(p => p.Remark).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
+            }
+            //Address 不能被标记为已删除
+            if (account.Remark.First().IsDeleted)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
 
             //仅限当前用户等于owner参数
@@ -158,7 +162,13 @@ namespace NexoAPI.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key incorrect.", data = $"Public key: {pubKey}" });
                 owners.Add(Contract.CreateSignatureContract(ECPoint.Parse(pubKey, ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35));
             }
-            owners = owners.OrderBy(p => p).ToList();
+            owners = owners.OrderBy(p => p).Distinct().ToList();
+
+            //PublicKeys不允许重复
+            if (owners.Count != request.PublicKeys.Length)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public keys are not allowed to be the same.", data = string.Empty });
+            }
 
             //仅限当前用户的publicKey在publicKeys参数中
             if (!request.PublicKeys.Contains(currentUser.PublicKey))
@@ -228,13 +238,17 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "TokenExpired", message = "Authorization incorrect.", data = $"Token: {token}" });
             }
 
-            //标记为已删除的，仍可重复删除
             var account = _context.Account.Include(p => p.Remark).FirstOrDefault(p => p.Address == address);
 
             //Address 检查
             if (account is null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
+            }
+            //Address 不能被标记为已删除
+            if (account.Remark.First().IsDeleted)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
 
             //仅限当前用户等于owner参数
@@ -288,6 +302,11 @@ namespace NexoAPI.Controllers
             if (account is null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
+            }
+            //Address 不能被标记为已删除
+            if (account.Remark.First().IsDeleted)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
 
             //仅限当前用户等于owner参数

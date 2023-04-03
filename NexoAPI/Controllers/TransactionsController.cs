@@ -15,6 +15,7 @@ using System.Security.Policy;
 using NuGet.Protocol.Plugins;
 using Neo.IO;
 using Akka.Util.Internal;
+using Org.BouncyCastle.Math;
 
 namespace NexoAPI.Controllers
 {
@@ -253,7 +254,7 @@ namespace NexoAPI.Controllers
             var multiAccount = account.GetScriptHash();
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
 
-            var script = contractHash.MakeScript("transfer", multiAccount, receiver, amount * (decimal)Math.Pow(10, tokenInfo.Decimals), string.Empty);
+            var script = contractHash.MakeScript("transfer", multiAccount, receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
 
             var signers = new[]
             {

@@ -51,7 +51,7 @@ namespace NexoAPI.Models
 
         public string Operation { get; set; } = string.Empty;
 
-        public JArray Params { get; set; }
+        public JArray? Params { get; set; }
 
         public string Amount { get; set; } = string.Empty;
 
