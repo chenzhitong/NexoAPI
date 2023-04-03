@@ -29,6 +29,16 @@ namespace NexoAPI
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                try
+                {
+                    var temp = _context.User.FirstOrDefault();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"后台任务运行时数据库连接失败 {ex.Message}");
+                    break;
+                }
+
                 //后台任务一：根据用户签名修改交易的RawData
                 var list1 = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult).ThenInclude(s => s.Signer).
                     Where(p => p.Status == Models.TransactionStatus.Signing);
@@ -104,6 +114,17 @@ namespace NexoAPI
 
                     _context.Update(tx);
                 }
+                try
+                {
+                    var temp = Helper.Client.GetBlockCountAsync().Result;
+                }
+                catch (Exception ex)
+                {
+
+                    _logger.Error($"后台任务运行时种子节点连接失败 {ex.Message}");
+                    break;
+                }
+
 
                 //后台任务二：检查交易是否上链并修改交易状态
                 _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing).ToList().ForEach(p => {
