@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Neo;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
 using NuGet.Protocol;
@@ -30,7 +31,15 @@ namespace NexoAPI.Controllers
                     // get nep17 token info
                     try
                     {
-                        var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(hash).Result;
+                        RpcNep17TokenInfo tokenInfo;
+                        try
+                        {
+                            tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(hash).Result;
+                        }
+                        catch (Exception)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Unable to connect to seed node.", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                        }
                         result.Add(new Nep17TokenResponse() { ContractHash = item, Symbol = tokenInfo.Symbol, Decimals = tokenInfo.Decimals });
                     }
                     catch (Exception)

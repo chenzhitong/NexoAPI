@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
@@ -43,7 +44,15 @@ namespace NexoAPI.Controllers
                 if (string.IsNullOrEmpty(item?["tokenid"]?.ToString()))
                 {
                     var tokenId = item?["asset"]?.ToString() ?? string.Empty;
-                    var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(tokenId).Result;
+                    RpcNep17TokenInfo tokenInfo;
+                    try
+                    {
+                        tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(tokenId).Result;
+                    }
+                    catch (Exception)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Unable to connect to seed node.", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                    }
                     var amount = Helper.ChangeToDecimal(item?["balance"]?.ToString() ?? "0") / (decimal)Math.Pow(10, tokenInfo.Decimals);
                     result.Add(new Nep17BalanceResponse() { Address = address, Amount = amount.ToString(), ContractHash = tokenId });
                 }
