@@ -43,7 +43,7 @@ namespace NexoAPI.Controllers
                 if (string.IsNullOrEmpty(item?["tokenid"]?.ToString()))
                 {
                     var tokenId = item?["asset"]?.ToString() ?? string.Empty;
-                    var tokenInfo = new Nep17API(Helper.Client(_config)).GetTokenInfoAsync(tokenId).Result;
+                    var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(tokenId).Result;
                     var amount = Helper.ChangeToDecimal(item?["balance"]?.ToString() ?? "0") / (decimal)Math.Pow(10, tokenInfo.Decimals);
                     result.Add(new Nep17BalanceResponse() { Address = address, Amount = amount.ToString(), ContractHash = tokenId });
                 }
