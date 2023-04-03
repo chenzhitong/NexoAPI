@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Neo.Network.RPC;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
@@ -40,7 +41,12 @@ namespace NexoAPI.Controllers
             foreach (var item in jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>())
             {
                 if (string.IsNullOrEmpty(item?["tokenid"]?.ToString()))
-                    result.Add(new Nep17BalanceResponse() { Address = address, Amount = item?["balance"]?.ToString() ?? "0", ContractHash = item?["asset"]?.ToString() ?? string.Empty });
+                {
+                    var tokenId = item?["asset"]?.ToString() ?? string.Empty;
+                    var tokenInfo = new Nep17API(Helper.Client(_config)).GetTokenInfoAsync(tokenId).Result;
+                    var amount = Helper.ChangeToDecimal(item?["balance"]?.ToString() ?? "0") / (decimal)Math.Pow(10, tokenInfo.Decimals);
+                    result.Add(new Nep17BalanceResponse() { Address = address, Amount = amount.ToString(), ContractHash = tokenId });
+                }
             }
             return new ObjectResult(result);
         }
