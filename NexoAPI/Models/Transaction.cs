@@ -17,7 +17,7 @@ namespace NexoAPI.Models
 
         public uint ValidUntilBlock { get; set; }
 
-        public string Creater { get; set; }
+        public string Creator { get; set; }
 
         public string FeePayer { get; set; }
 
@@ -75,14 +75,14 @@ namespace NexoAPI.Models
             RawData = p.RawData;
             Hash = p.Hash;
             ValidUntilBlock = p.ValidUntilBlock;
-            Creater = p.Creater;
+            Creator = p.Creator;
             FeePayer = p.FeePayer;
             CreateTime = p.CreateTime;
-            ExecuteTime = p.ExecuteTime;
+            ExecuteTime = p.ExecuteTime > new DateTime(2023,1,1) ? p.ExecuteTime : null;
             Status = p.Status.ToString();
             ContractHash = p.ContractHash;
             Operation = p.Operation;
-            Params = p.Params;
+            Params = string.IsNullOrEmpty(p.Params) ? null : JArray.Parse(p.Params);
             Amount = p.Amount;
             Destination = p.Destination;
             TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
@@ -98,13 +98,13 @@ namespace NexoAPI.Models
 
         public uint ValidUntilBlock { get; set; }
 
-        public string Creater { get; set; }
+        public string Creator { get; set; }
 
         public string FeePayer { get; set; }
 
         public DateTime CreateTime { get; set; }
 
-        public DateTime ExecuteTime { get; set; }
+        public DateTime? ExecuteTime { get; set; }
 
         public string Status { get; set; }
 
@@ -112,7 +112,7 @@ namespace NexoAPI.Models
 
         public string Operation { get; set; }
 
-        public string Params { get; set; }
+        public JArray Params { get; set; }
 
         public string Amount { get; set; }
 

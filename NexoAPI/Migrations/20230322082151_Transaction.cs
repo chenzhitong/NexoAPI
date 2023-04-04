@@ -22,7 +22,7 @@ namespace NexoAPI.Migrations
                     RawData = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Hash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ValidUntilBlock = table.Column<int>(type: "int", nullable: false),
-                    Creater = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Creator = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FeePayer = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ExecuteTime = table.Column<DateTime>(type: "datetime2", nullable: false),

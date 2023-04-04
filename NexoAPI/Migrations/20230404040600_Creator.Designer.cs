@@ -12,8 +12,8 @@ using NexoAPI.Data;
 namespace NexoAPI.Migrations
 {
     [DbContext(typeof(NexoAPIContext))]
-    [Migration("20230322082151_Transaction")]
-    partial class Transaction
+    [Migration("20230404040600_Creator")]
+    partial class Creator
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,6 +38,10 @@ namespace NexoAPI.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Owners")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PublicKeys")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -67,7 +71,6 @@ namespace NexoAPI.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("RemarkName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
@@ -91,6 +94,9 @@ namespace NexoAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Approved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("InWitness")
                         .HasColumnType("bit");
 
                     b.Property<string>("Signature")
@@ -171,8 +177,8 @@ namespace NexoAPI.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<int>("ValidUntilBlock")
-                        .HasColumnType("int");
+                    b.Property<long>("ValidUntilBlock")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

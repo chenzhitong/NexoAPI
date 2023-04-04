@@ -80,15 +80,14 @@ namespace NexoAPI.Controllers
                     //交易不是Signing状态或该owner签过名
                     _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
                     .Where(p => p.Account.Address == account)
-                    .Where(p => p.Status != TransactionStatus.Signing || p.SignResult.Any(p => p.Signer.Address.Contains(owner)))
-                    .OrderByDescending(p => p.CreateTime).ThenBy(p => p.Hash).ToList();
+                    .Where(p => p.Status != TransactionStatus.Signing || p.SignResult.Any(p => p.Signer.Address.Contains(owner))).ToList();
             }
             else
             {
                 list = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
-                    .Where(p => p.Account.Address == account)
-                    .OrderByDescending(p => p.CreateTime).ThenBy(p => p.Hash).ToList();
+                    .Where(p => p.Account.Address == account).ToList();
             }
+            list = list.OrderByDescending(p => p.CreateTime).ThenBy(p => p.Hash).ToList();
 
             //根据 cursor 筛选符合条件的 Transaction
             if (cursor is not null)
@@ -188,7 +187,7 @@ namespace NexoAPI.Controllers
             {
                 Account = accountItem,
                 FeePayer = request.FeePayer,
-                Creater = currentUser.Address,
+                Creator = currentUser.Address,
                 CreateTime = DateTime.UtcNow,
                 Status = TransactionStatus.Signing,
                 ContractHash = request.ContractHash,
