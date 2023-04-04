@@ -39,7 +39,7 @@ namespace NexoAPI
         private static partial Regex SignatureRegex();
         public static bool SignatureIsValid(string input) => SignatureRegex().IsMatch(input);
 
-        public static RpcClient Client = new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null);
+        public static RpcClient Client { get { return new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null); } }
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
