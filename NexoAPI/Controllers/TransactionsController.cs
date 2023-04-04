@@ -16,6 +16,7 @@ using NuGet.Protocol.Plugins;
 using Neo.IO;
 using Akka.Util.Internal;
 using Org.BouncyCastle.Math;
+using Neo.Network.RPC.Models;
 
 namespace NexoAPI.Controllers
 {
@@ -169,7 +170,15 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash is incorrect.", data = $"Contract hash: {request.ContractHash}" });
             }
-            var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
+            RpcNep17TokenInfo tokenInfo;
+            try
+            {
+                tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+            }
             if (tokenInfo is null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Default.Network}" });
@@ -203,6 +212,10 @@ namespace NexoAPI.Controllers
                     {
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Unsupported parameters.", data = ex.Message });
                     }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                    }
                 }
                 else if (type == TransactionType.Nep17Transfer)
                 {
@@ -226,11 +239,17 @@ namespace NexoAPI.Controllers
                     {
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Destination is incorrect.", data = $"Destination: {request.Destination}" });
                     }
-
-                    var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver);
-                    tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
-                    tx.Hash = rawTx.Hash.ToString();
-                    tx.Params = string.Empty;
+                    try
+                    {
+                        var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver);
+                        tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                        tx.Hash = rawTx.Hash.ToString();
+                        tx.Params = string.Empty;
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                    }
                 }
             }
             else

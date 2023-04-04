@@ -49,9 +49,9 @@ namespace NexoAPI.Controllers
                     {
                         tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(tokenId).Result;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Unable to connect to seed node.", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
                     }
                     var amount = Helper.ChangeToDecimal(item?["balance"]?.ToString() ?? "0") / (decimal)Math.Pow(10, tokenInfo.Decimals);
                     result.Add(new Nep17BalanceResponse() { Address = address, Amount = amount.ToString(), ContractHash = tokenId });

@@ -36,9 +36,9 @@ namespace NexoAPI.Controllers
                         {
                             tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(hash).Result;
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-                            return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Unable to connect to seed node.", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                            return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
                         }
                         result.Add(new Nep17TokenResponse() { ContractHash = item, Symbol = tokenInfo.Symbol, Decimals = tokenInfo.Decimals });
                     }
