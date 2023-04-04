@@ -113,7 +113,7 @@ namespace NexoAPI.Controllers
                     list.RemoveRange(0, startIndex);
             }
 
-            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new TransactionResponse(p));
+            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(TransactionResponse.GetResponse);
 
             return new ObjectResult(result);
         }

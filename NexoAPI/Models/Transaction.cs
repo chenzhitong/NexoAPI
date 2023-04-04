@@ -1,5 +1,9 @@
-﻿using Neo.Network.RPC;
+﻿using Akka.Actor;
+using Neo.Network.RPC;
 using Newtonsoft.Json.Linq;
+using NexoAPI.Migrations;
+using Org.BouncyCastle.Asn1.Pkcs;
+using System.Security.Policy;
 
 namespace NexoAPI.Models
 {
@@ -9,7 +13,7 @@ namespace NexoAPI.Models
 
         public Account Account { get; set; }
 
-        public TransactionType Type{ get; set; }
+        public TransactionType Type { get; set; }
 
         public string RawData { get; set; } = string.Empty;
 
@@ -68,25 +72,55 @@ namespace NexoAPI.Models
 
     public class TransactionResponse
     {
-        public TransactionResponse(Transaction p)
+        public static object GetResponse(Transaction p)
         {
-            Account = p.Account.Address;
-            Type = p.Type.ToString();
-            RawData = p.RawData;
-            Hash = p.Hash;
-            ValidUntilBlock = p.ValidUntilBlock;
-            Creator = p.Creator;
-            FeePayer = p.FeePayer;
-            CreateTime = p.CreateTime;
-            ExecuteTime = p.ExecuteTime > new DateTime(2023,1,1) ? p.ExecuteTime : null;
-            Status = p.Status.ToString();
-            ContractHash = p.ContractHash;
-            Operation = p.Operation;
-            Params = string.IsNullOrEmpty(p.Params) ? null : JArray.Parse(p.Params);
-            Amount = p.Amount;
-            Destination = p.Destination;
-            TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
+            if (p.Type == TransactionType.Invocation)
+            {
+                return new InvocationTransactionResponse()
+                {
+                    Account = p.Account.Address,
+                    Type = p.Type.ToString(),
+                    RawData = p.RawData,
+                    Hash = p.Hash,
+                    ValidUntilBlock = p.ValidUntilBlock,
+                    Creator = p.Creator,
+                    FeePayer = p.FeePayer,
+                    CreateTime = p.CreateTime,
+                    ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
+                    Status = p.Status.ToString(),
+                    ContractHash = p.ContractHash,
+                    Operation = p.Operation,
+                    Params = string.IsNullOrEmpty(p.Params) ? null : JArray.Parse(p.Params)
+                };
+            }
+            else if (p.Type == TransactionType.Nep17Transfer)
+            {
+                return new Nep17TransferTransactionResponse()
+                {
+                    Account = p.Account.Address,
+                    Type = p.Type.ToString(),
+                    RawData = p.RawData,
+                    Hash = p.Hash,
+                    ValidUntilBlock = p.ValidUntilBlock,
+                    Creator = p.Creator,
+                    FeePayer = p.FeePayer,
+                    CreateTime = p.CreateTime,
+                    ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
+                    Status = p.Status.ToString(),
+                    ContractHash = p.ContractHash,
+                    Amount = p.Amount,
+                    Destination = p.Destination,
+                    TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol
+                };
+            }
+            return null;
+
         }
+
+    }
+
+    public class InvocationTransactionResponse
+    {
 
         public string Account { get; set; }
 
@@ -113,6 +147,31 @@ namespace NexoAPI.Models
         public string Operation { get; set; }
 
         public JArray Params { get; set; }
+    }
+    public class Nep17TransferTransactionResponse
+    {
+
+        public string Account { get; set; }
+
+        public string Type { get; set; }
+
+        public string RawData { get; set; }
+
+        public string Hash { get; set; }
+
+        public uint ValidUntilBlock { get; set; }
+
+        public string Creator { get; set; }
+
+        public string FeePayer { get; set; }
+
+        public DateTime CreateTime { get; set; }
+
+        public DateTime? ExecuteTime { get; set; }
+
+        public string Status { get; set; }
+
+        public string ContractHash { get; set; }
 
         public string Amount { get; set; }
 
@@ -120,7 +179,6 @@ namespace NexoAPI.Models
 
         public string TokenSymbol { get; set; }
     }
-
     public enum TransactionType
     {
         Invocation,
