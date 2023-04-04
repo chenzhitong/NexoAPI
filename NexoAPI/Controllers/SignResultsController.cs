@@ -89,18 +89,6 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
             }
 
-            //Signature 检查
-            if (!Helper.SignatureIsValid(request.Signature))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
-            }
-
-            //重复值检查
-            if (_context.SignResult.Include(p => p.Transaction).Any(p => p.Transaction.Hash == transactionHash && p.Signer.Address == currentUser.Address))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"SignResult already exists", data = $"Transaction: {tx.Hash}, Signer: {currentUser.Address}" });
-            }
-
             //Approved 检查
             if (!bool.TryParse(request.Approved, out bool approved))
             {
@@ -109,6 +97,18 @@ namespace NexoAPI.Controllers
 
             if (approved)
             {
+                //Signature 检查
+                if (!Helper.SignatureIsValid(request.Signature))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
+                }
+
+                //重复值检查
+                if (_context.SignResult.Include(p => p.Transaction).Any(p => p.Transaction.Hash == transactionHash && p.Signer.Address == currentUser.Address))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotSatisfied", message = $"SignResult already exists", data = $"Transaction: {tx.Hash}, Signer: {currentUser.Address}" });
+                }
+
                 //验证签名
                 var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
 

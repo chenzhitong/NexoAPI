@@ -10,7 +10,7 @@
 
         public bool Approved { get; set; }
 
-        public string Signature { get; set; }
+        public string? Signature { get; set; }
 
         public bool InWitness { get; set; }
     }
@@ -19,7 +19,7 @@
     {
         public string Approved { get; set; }
 
-        public string Signature { get; set; }
+        public string? Signature { get; set; }
     }
 
 
@@ -31,6 +31,6 @@
 
         public bool Approved { get; set; }
 
-        public string Signature { get; set; }
+        public string? Signature { get; set; }
     }
 }
