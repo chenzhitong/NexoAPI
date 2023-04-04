@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Neo.Network.RPC;
+using Newtonsoft.Json.Linq;
 
 namespace NexoAPI.Models
 {
@@ -84,6 +85,7 @@ namespace NexoAPI.Models
             Params = p.Params;
             Amount = p.Amount;
             Destination = p.Destination;
+            TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
         }
 
         public string Account { get; set; }
@@ -115,6 +117,8 @@ namespace NexoAPI.Models
         public string Amount { get; set; }
 
         public string Destination { get; set; }
+
+        public string TokenSymbol { get; set; }
     }
 
     public enum TransactionType
