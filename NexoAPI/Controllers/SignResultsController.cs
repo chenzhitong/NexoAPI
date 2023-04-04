@@ -110,7 +110,7 @@ namespace NexoAPI.Controllers
                 }
 
                 //验证签名
-                var message = Helper.GetSignData(new UInt256(tx.Hash.HexToBytes()));
+                var message = Helper.GetSignData(new UInt256(tx.Hash[2..].HexToBytes().Reverse().ToArray()));
 
                 //也许不用验证
                 if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
