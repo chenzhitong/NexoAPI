@@ -18,7 +18,7 @@ namespace NexoAPI.Controllers
             _context = context;
         }
 
-        [HttpGet("{transactionHash}")]
+        [HttpGet]
         public ObjectResult GetSignResult(string transactionHash)
         {
             //Authorization 格式检查
