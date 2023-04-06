@@ -69,7 +69,7 @@ namespace NexoAPI
                     }
 
                     //FeePayer需要单独的签名
-                    var feePayerSignResult = tx.SignResult.FirstOrDefault(p => p.Signer.Address == tx.FeePayer);
+                    var feePayerSignResult = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.FeePayer);
                     if (feePayerSignResult is not null)
                     {
                         //FeePayer的签名未添加到交易的Witness中
@@ -94,7 +94,7 @@ namespace NexoAPI
                     }
 
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
-                    var otherSignResult = tx.SignResult.Where(p => tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).Take(tx.Account.Threshold).ToList();
+                    var otherSignResult = tx.SignResult.Where(p => p.Approved && tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).Take(tx.Account.Threshold).ToList();
                     if (otherSignResult is not null && otherSignResult.Count == tx.Account.Threshold)
                     {
                         //如果没添加到Witness中，则构造Witness添加到交易中
@@ -135,6 +135,10 @@ namespace NexoAPI
                             }
                         }
                         _context.Update(tx);
+                    }
+                    if (rawTx.Hash.ToString() != tx.Hash)
+                    {
+                        _logger.Error($"后台任务交易时出错，构造后的交易哈希与原交易哈希不相同");
                     }
                 }
 
