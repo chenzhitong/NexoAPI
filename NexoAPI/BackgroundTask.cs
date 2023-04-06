@@ -94,10 +94,9 @@ namespace NexoAPI
                     }
 
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
-                    var otherSignResult = tx.SignResult.Where(p => tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).ToList();
-                    if (otherSignResult is not null && otherSignResult.Count >= tx.Account.Threshold)
+                    var otherSignResult = tx.SignResult.Where(p => tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).Take(tx.Account.Threshold).ToList();
+                    if (otherSignResult is not null && otherSignResult.Count == tx.Account.Threshold)
                     {
-                        otherSignResult = otherSignResult.Take(tx.Account.Threshold).ToList();
                         //如果没添加到Witness中，则构造Witness添加到交易中
                         if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()))
                         {
