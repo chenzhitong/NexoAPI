@@ -97,6 +97,7 @@ namespace NexoAPI
                     var otherSignResult = tx.SignResult.Where(p => tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).ToList();
                     if (otherSignResult is not null && otherSignResult.Count >= tx.Account.Threshold)
                     {
+                        otherSignResult = otherSignResult.Take(tx.Account.Threshold).ToList();
                         //如果没添加到Witness中，则构造Witness添加到交易中
                         if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()))
                         {
