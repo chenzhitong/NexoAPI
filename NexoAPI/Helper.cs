@@ -66,7 +66,8 @@ namespace NexoAPI
         {
             using MemoryStream ms = new();
             using BinaryWriter writer = new(ms);
-            writer.Write(ConfigHelper.AppSetting("Network"));
+            var network = Convert.ToUInt32(ConfigHelper.AppSetting("Network"));
+            writer.Write(network);
             writer.Write(txHash);
             writer.Flush();
             return ms.ToArray();
