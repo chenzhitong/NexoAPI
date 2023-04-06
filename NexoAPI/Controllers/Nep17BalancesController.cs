@@ -26,7 +26,7 @@ namespace NexoAPI.Controllers
             string scriptHash;
             try
             {
-                scriptHash = address.ToScriptHash(0x35).ToString();
+                scriptHash = address.ToScriptHash().ToString();
             }
             catch (Exception)
             {

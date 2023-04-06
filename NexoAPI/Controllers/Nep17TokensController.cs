@@ -29,23 +29,16 @@ namespace NexoAPI.Controllers
                 if (UInt160.TryParse(item, out UInt160 hash))
                 {
                     // get nep17 token info
+                    RpcNep17TokenInfo tokenInfo;
                     try
                     {
-                        RpcNep17TokenInfo tokenInfo;
-                        try
-                        {
-                            tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(hash).Result;
-                        }
-                        catch (Exception ex)
-                        {
-                            return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
-                        }
-                        result.Add(new Nep17TokenResponse() { ContractHash = item, Symbol = tokenInfo.Symbol, Decimals = tokenInfo.Decimals });
+                        tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(hash).Result;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {item}, Network: {ProtocolSettings.Default.Network}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")} Network: {ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).Network}" });
                     }
+                    result.Add(new Nep17TokenResponse() { ContractHash = item, Symbol = tokenInfo.Symbol, Decimals = tokenInfo.Decimals });
                 }
                 else
                 {

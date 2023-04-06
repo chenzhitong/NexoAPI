@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
+﻿using Akka.Actor;
+using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.IO;
@@ -66,7 +67,7 @@ namespace NexoAPI
         {
             using MemoryStream ms = new();
             using BinaryWriter writer = new(ms);
-            var network = Convert.ToUInt32(ConfigHelper.AppSetting("Network"));
+            var network = ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).Network;
             writer.Write(network);
             writer.Write(txHash);
             writer.Flush();
@@ -145,10 +146,19 @@ namespace NexoAPI
 
         public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
+        public static UInt160 ToScriptHash(this string address)
+        {
+            return address.ToScriptHash(ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).AddressVersion);
+        }
+
+        public static string ToAddress(this UInt160 scriptHash)
+        {
+            return scriptHash.ToAddress(ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).AddressVersion);
+        }
 
         public static decimal GetNep17AssetsValue(string address)
         {
-            var scriptHash = address.ToScriptHash(0x35).ToString();
+            var scriptHash = address.ToScriptHash().ToString();
             // 查询该地址上所有NEP-17资产的合约地址
             var response = PostWebRequest(ConfigHelper.AppSetting("OneGateExplorerAPI"), "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
             var jobject = JObject.Parse(response);

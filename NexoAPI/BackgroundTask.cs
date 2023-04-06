@@ -61,7 +61,7 @@ namespace NexoAPI
                         _logger.Error($"JToken.Parse(tx.RawData) 时出错，tx.RawData = {tx.RawData}");
                         continue;
                     }
-                    var rawTx = Neo.Network.RPC.Models.RpcTransaction.FromJson((JObject)jtTx, ProtocolSettings.Default).Transaction;
+                    var rawTx = Neo.Network.RPC.Models.RpcTransaction.FromJson((JObject)jtTx, ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).Transaction;
                     if (rawTx == null)
                     {
                         _logger.Error($"RpcTransaction.FromJson() 时出错，tx.RawData = {tx.RawData}");
@@ -78,7 +78,7 @@ namespace NexoAPI
                             rawTx.Signers = rawTx.Signers.Append(new Signer()
                             {
                                 Scopes = WitnessScope.CalledByEntry,
-                                Account = tx.FeePayer.ToScriptHash(0x35)
+                                Account = tx.FeePayer.ToScriptHash()
                             }).ToArray();
 
                             using ScriptBuilder scriptBuilder = new();
@@ -88,7 +88,7 @@ namespace NexoAPI
                                 InvocationScript = scriptBuilder.ToArray(),
                                 VerificationScript = feePayerSignResult.Signer.GetScript()
                             }).ToArray();
-                            tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                            tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(feePayerSignResult);
                         }
                     }
@@ -103,7 +103,7 @@ namespace NexoAPI
                             rawTx.Signers = rawTx.Signers.Append(new Signer()
                             {
                                 Scopes = WitnessScope.CalledByEntry,
-                                Account = tx.Account.Address.ToScriptHash(0x35)
+                                Account = tx.Account.Address.ToScriptHash()
                             }).ToArray();
 
                             using ScriptBuilder scriptBuilder = new();
@@ -118,7 +118,7 @@ namespace NexoAPI
                                 InvocationScript = scriptBuilder.ToArray(),
                                 VerificationScript = tx.Account.GetScript()
                             }).ToArray();
-                            tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                            tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         }
 
                         //发送交易

@@ -71,7 +71,7 @@ namespace NexoAPI.Controllers
                 var address = cursorJson?["address"]?.ToString() ?? string.Empty;
                 try
                 {
-                    address.ToScriptHash(0x35);
+                    address.ToScriptHash();
                 }
                 catch (Exception)
                 {
@@ -158,7 +158,7 @@ namespace NexoAPI.Controllers
             {
                 if (!Helper.PublicKeyIsValid(pubKey))
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key incorrect.", data = $"Public key: {pubKey}" });
-                owners.Add(Contract.CreateSignatureContract(ECPoint.Parse(pubKey, ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35));
+                owners.Add(Contract.CreateSignatureContract(ECPoint.Parse(pubKey, ECCurve.Secp256r1)).ScriptHash.ToAddress());
             }
             owners = owners.OrderBy(p => p).Distinct().ToList();
 
@@ -186,7 +186,7 @@ namespace NexoAPI.Controllers
                 Owners = string.Join(',', owners),
                 PublicKeys = string.Join(',', request.PublicKeys),
                 Threshold = request.Threshold,
-                Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress(0x35)
+                Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress()
             };
             var accountItem = _context.Account.FirstOrDefault(p => p.Address == account.Address);
             //重复值检查

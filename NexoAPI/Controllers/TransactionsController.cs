@@ -151,7 +151,7 @@ namespace NexoAPI.Controllers
             //feePayer 检查
             try
             {
-                request.FeePayer.ToScriptHash(0x35);
+                request.FeePayer.ToScriptHash();
             }
             catch (Exception)
             {
@@ -180,7 +180,7 @@ namespace NexoAPI.Controllers
             }
             if (tokenInfo is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Default.Network}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).Network}" });
             }
 
             var tx = new Transaction()
@@ -204,7 +204,7 @@ namespace NexoAPI.Controllers
                     try
                     {
                         var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, contractHash, request.Operation, request.Params);
-                        tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                        tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                     }
                     catch (ArgumentException ex)
@@ -231,7 +231,7 @@ namespace NexoAPI.Controllers
                     }
                     try
                     {
-                        receiver = request.Destination.ToScriptHash(0x35);
+                        receiver = request.Destination.ToScriptHash();
                         tx.Destination = request.Destination;
                     }
                     catch (Exception)
@@ -241,7 +241,7 @@ namespace NexoAPI.Controllers
                     try
                     {
                         var rawTx = TransferFromMultiSignAccount(accountItem, request.FeePayer, contractHash, amount, receiver);
-                        tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
+                        tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                         tx.Params = string.Empty;
                     }
@@ -277,7 +277,7 @@ namespace NexoAPI.Controllers
         private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var multiAccount = account.GetScriptHash();
-            var feePayerAccount = feePayer.ToScriptHash(0x35);
+            var feePayerAccount = feePayer.ToScriptHash();
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
 
             var script = contractHash.MakeScript("transfer", multiAccount, receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
@@ -305,7 +305,7 @@ namespace NexoAPI.Controllers
         private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
         {
             var multiAccount = account.GetScriptHash();
-            var feePayerAccount = feePayer.ToScriptHash(0x35);
+            var feePayerAccount = feePayer.ToScriptHash();
 
             var parameters = new List<ContractParameter>();
             foreach (var p in contractParameters)

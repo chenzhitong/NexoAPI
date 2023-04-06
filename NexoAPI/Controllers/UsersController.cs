@@ -30,7 +30,7 @@ namespace NexoAPI.Controllers
             //address 检查
             try
             {
-                address.ToScriptHash(0x35);
+                address.ToScriptHash();
             }
             catch (Exception)
             {
@@ -63,7 +63,7 @@ namespace NexoAPI.Controllers
             }
 
             //检查公钥和地址是否匹配
-            var publicKeyToAddress = Contract.CreateSignatureContract(Neo.Cryptography.ECC.ECPoint.Parse(request.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ScriptHash.ToAddress(0x35);
+            var publicKeyToAddress = Contract.CreateSignatureContract(Neo.Cryptography.ECC.ECPoint.Parse(request.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ScriptHash.ToAddress();
             if (publicKeyToAddress != address)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key and address mismatch." });
@@ -112,7 +112,7 @@ namespace NexoAPI.Controllers
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(privateKey);
             var publicKey = new KeyPair(privateKey).PublicKey;
-            var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress(0x35);
+            var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress();
             var nonce = new NoncesController().PostNonce();
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce).Replace("\r\n", "\n");
 ;
