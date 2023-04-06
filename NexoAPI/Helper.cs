@@ -158,9 +158,16 @@ namespace NexoAPI
             {
                 var asset = item["asset"]?.ToString() ?? string.Empty;
                 var amount = ChangeToDecimal(item["balance"]?.ToString() ?? "0");
-                var tokenInfo = new Nep17API(Client).GetTokenInfoAsync(asset).Result;
-                var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
-                list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
+                try
+                {
+                    var tokenInfo = new Nep17API(Client).GetTokenInfoAsync(asset).Result;
+                    var trueBalance = amount / (decimal)Math.Pow(10, tokenInfo.Decimals);
+                    list.Add(new TokenBalance() { ContractHash = asset, TrueBalcnce = trueBalance });
+                }
+                catch (Exception)
+                {
+                    //遇到异常资产则跳过统计
+                }
             }
 
             var response2 = JToken.Parse(PostWebRequest(ConfigHelper.AppSetting("OneGateQuoteAPI"), list.Select(p => p.ContractHash).ToArray().ToJson()));

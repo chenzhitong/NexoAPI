@@ -95,7 +95,7 @@ namespace NexoAPI.Models
             }
             else if (p.Type == TransactionType.Nep17Transfer)
             {
-                return new Nep17TransferTransactionResponse()
+                var temp =  new Nep17TransferTransactionResponse()
                 {
                     Account = p.Account.Address,
                     Type = p.Type.ToString(),
@@ -110,11 +110,19 @@ namespace NexoAPI.Models
                     ContractHash = p.ContractHash,
                     Amount = p.Amount,
                     Destination = p.Destination,
-                    TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol
+                    
                 };
+                try
+                {
+                    temp.TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
+                }
+                catch (Exception)
+                {
+                    temp.TokenSymbol = "TokenSymbolException";
+                }
+                return temp;
             }
             return null;
-
         }
 
     }

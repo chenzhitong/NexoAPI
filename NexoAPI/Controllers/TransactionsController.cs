@@ -203,7 +203,7 @@ namespace NexoAPI.Controllers
                     tx.Params = request.Params.ToString();
                     try
                     {
-                        var rawTx = InvocationFromMultiSignAccount(accountItem, contractHash, request.Operation, request.Params);
+                        var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, contractHash, request.Operation, request.Params);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                     }
@@ -240,7 +240,7 @@ namespace NexoAPI.Controllers
                     }
                     try
                     {
-                        var rawTx = TransferFromMultiSignAccount(accountItem, contractHash, amount, receiver);
+                        var rawTx = TransferFromMultiSignAccount(accountItem, request.FeePayer, contractHash, amount, receiver);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Default).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                         tx.Params = string.Empty;
@@ -274,18 +274,26 @@ namespace NexoAPI.Controllers
             return new("ok");
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, UInt160 contractHash, decimal amount, UInt160 receiver)
+        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var multiAccount = account.GetScriptHash();
+            var feePayerAccount = feePayer.ToScriptHash(0x35);
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
 
             var script = contractHash.MakeScript("transfer", multiAccount, receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
 
             var signers = new[]
             {
+                //Signers中的第一个是付手续费的
                 new Neo.Network.P2P.Payloads.Signer
                 {
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry, Account = multiAccount
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                    Account = feePayerAccount
+                },
+                new Neo.Network.P2P.Payloads.Signer
+                {
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                    Account = multiAccount
                 }
             };
 
@@ -294,14 +302,15 @@ namespace NexoAPI.Controllers
             return tx;
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, UInt160 contractHash, string operation, JArray contractParameters)
+        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
         {
             var multiAccount = account.GetScriptHash();
+            var feePayerAccount = feePayer.ToScriptHash(0x35);
 
             var parameters = new List<ContractParameter>();
             foreach (var p in contractParameters)
             {
-                var t = Neo.Json.JObject.Parse(p.ToString()) as Neo.Json.JObject;
+                var t = Neo.Json.JToken.Parse(p.ToString()) as Neo.Json.JObject;
                 try
                 {
                     parameters.Add(ContractParameter.FromJson(t));
@@ -319,6 +328,12 @@ namespace NexoAPI.Controllers
 
             var signers = new[]
             {
+                //Signers中的第一个是付手续费的
+                new Neo.Network.P2P.Payloads.Signer
+                {
+                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                    Account = feePayerAccount
+                },
                 new Neo.Network.P2P.Payloads.Signer
                 {
                     Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
