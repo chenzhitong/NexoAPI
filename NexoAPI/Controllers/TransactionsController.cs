@@ -148,7 +148,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user's address must be in the owners of the account" });
             }
 
-            //feePayer 检查
+            //feePayer 格式检查
             try
             {
                 request.FeePayer.ToScriptHash();
@@ -157,11 +157,15 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Fee payer is incorrect.", data = $"Fee payer: {request.FeePayer}" });
             }
-
-            //feePayer 必须等于该账户或在该账户的 owners 中
-            if (request.Account != request.FeePayer && !accountItem.Owners.Contains(request.FeePayer))
+            //feePayer 检查
+            if (request.Account != request.FeePayer)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
+                //feePayer 必须等于该账户或在该账户的 owners 中
+                if (!accountItem.Owners.Contains(request.FeePayer))
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
+                //feePayer 必须是系统中的用户
+                if (!_context.User.Any(p => p.Address == request.FeePayer))
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be a user of the NEOX system, otherwise his contract script is not available", data = $"FeePayer: {request.FeePayer}" });
             }
 
             //验证ContractHash
@@ -274,7 +278,7 @@ namespace NexoAPI.Controllers
             return new("ok");
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
+        private Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var multiAccount = account.GetScriptHash();
             var feePayerAccount = feePayer.ToScriptHash();
@@ -284,7 +288,6 @@ namespace NexoAPI.Controllers
 
             var signers = new[]
             {
-                //Signers中的第一个是付手续费的
                 new Neo.Network.P2P.Payloads.Signer
                 {
                     Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
@@ -298,11 +301,25 @@ namespace NexoAPI.Controllers
             };
 
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-            tx.Witnesses = Array.Empty<Neo.Network.P2P.Payloads.Witness>();
+            tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
+            {
+                new Neo.Network.P2P.Payloads.Witness()
+                {
+                    InvocationScript = null,
+                    VerificationScript = feePayer == account.Address ? account.GetScript() : _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
+                },
+                new Neo.Network.P2P.Payloads.Witness()
+                {
+                    InvocationScript = null,
+                    VerificationScript = account.GetScript()
+                }
+            };
+            var base64 = Convert.ToBase64String(tx.ToArray());
+            tx.NetworkFee = Helper.CalculateNetworkFee(tx);
             return tx;
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
+        private Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
         {
             var multiAccount = account.GetScriptHash();
             var feePayerAccount = feePayer.ToScriptHash();
@@ -328,7 +345,6 @@ namespace NexoAPI.Controllers
 
             var signers = new[]
             {
-                //Signers中的第一个是付手续费的
                 new Neo.Network.P2P.Payloads.Signer
                 {
                     Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
@@ -342,7 +358,22 @@ namespace NexoAPI.Controllers
             };
 
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-            tx.Witnesses = Array.Empty<Neo.Network.P2P.Payloads.Witness>();
+
+            tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
+            {
+                new Neo.Network.P2P.Payloads.Witness()
+                {
+                    InvocationScript = null,
+                    VerificationScript = feePayer == account.Address ? account.GetScript() : _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
+                },
+                new Neo.Network.P2P.Payloads.Witness()
+                {
+                    InvocationScript = null,
+                    VerificationScript = account.GetScript()
+                }
+            };
+
+            tx.NetworkFee = Helper.CalculateNetworkFee(tx);
             return tx;
         }
     }

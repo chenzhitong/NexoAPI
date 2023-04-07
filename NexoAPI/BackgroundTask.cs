@@ -7,6 +7,7 @@ using Neo.Wallets;
 using NexoAPI.Data;
 using NLog;
 using Neo.Network.P2P.Payloads;
+using Neo.IO;
 
 namespace NexoAPI
 {
@@ -69,43 +70,26 @@ namespace NexoAPI
                     }
 
                     //FeePayer需要单独的签名
-                    var feePayerSignResult = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.FeePayer);
-                    if (feePayerSignResult is not null)
+                    if (tx.FeePayer != tx.Account.Address)
                     {
-                        //FeePayer的签名未添加到交易的Witness中
-                        if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString()))
+                        var feePayerSignResult = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.FeePayer);
+                        if (feePayerSignResult is not null)
                         {
-                            rawTx.Signers = rawTx.Signers.Append(new Signer()
-                            {
-                                Scopes = WitnessScope.CalledByEntry,
-                                Account = tx.FeePayer.ToScriptHash()
-                            }).ToArray();
-
                             using ScriptBuilder scriptBuilder = new();
                             scriptBuilder.EmitPush(feePayerSignResult.Signature.HexToBytes());
-                            rawTx.Witnesses = rawTx.Witnesses.Append(new Witness()
-                            {
-                                InvocationScript = scriptBuilder.ToArray(),
-                                VerificationScript = feePayerSignResult.Signer.GetScript()
-                            }).ToArray();
+
+                            rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
+
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(feePayerSignResult);
                         }
                     }
-
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
                     var otherSignResult = tx.SignResult.Where(p => p.Approved && tx.Account.Owners.Contains(p.Signer.Address)).OrderBy(p => p.Signer.PublicKey).Take(tx.Account.Threshold).ToList();
                     if (otherSignResult is not null && otherSignResult.Count == tx.Account.Threshold)
                     {
-                        //如果没添加到Witness中，则构造Witness添加到交易中
-                        if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()))
+                        if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString() && p.InvocationScript.Length > 0))
                         {
-                            rawTx.Signers = rawTx.Signers.Append(new Signer()
-                            {
-                                Scopes = WitnessScope.CalledByEntry,
-                                Account = tx.Account.Address.ToScriptHash()
-                            }).ToArray();
-
                             using ScriptBuilder scriptBuilder = new();
                             otherSignResult.ForEach(p =>
                             {
@@ -113,29 +97,27 @@ namespace NexoAPI
                                 _context.Update(p);
                             });
 
-                            rawTx.Witnesses = rawTx.Witnesses.Append(new Witness()
-                            {
-                                InvocationScript = scriptBuilder.ToArray(),
-                                VerificationScript = tx.Account.GetScript()
-                            }).ToArray();
+                            rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
+                            _context.Update(tx);
                         }
-
-                        //发送交易
-                        if (feePayerSignResult != null && rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString()))
-                        {
-                            try
-                            {
-                                var send = Helper.Client.SendRawTransactionAsync(rawTx).Result;
-                                tx.Status = Models.TransactionStatus.Executing;
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
-                            }
-                        }
-                        _context.Update(tx);
                     }
+
+                    //发送交易
+                    if (rawTx.Witnesses.All(p => p.InvocationScript.Length > 0))
+                    {
+                        try
+                        {
+                            var send = Helper.Client.SendRawTransactionAsync(rawTx).Result;
+                            tx.Status = Models.TransactionStatus.Executing;
+                            tx.ExecuteTime = DateTime.UtcNow;
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
+                        }
+                    }
+
                     if (rawTx.Hash.ToString() != tx.Hash)
                     {
                         _logger.Error($"后台任务交易时出错，构造后的交易哈希与原交易哈希不相同");
