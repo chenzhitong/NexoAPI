@@ -268,13 +268,7 @@ namespace NexoAPI.Controllers
             return new(new { });
         }
 
-        [HttpPost("Test")]
-        public ObjectResult Test([FromBody] JArray array)
-        {
-            return new("ok");
-        }
-
-        private Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
+        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
             var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
@@ -315,7 +309,7 @@ namespace NexoAPI.Controllers
             return tx;
         }
 
-        private Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer)
+        private static Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer)
         {
             return feePayer == account.Address ? new[]
                 {
@@ -339,7 +333,7 @@ namespace NexoAPI.Controllers
                 };
         }
 
-        private Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer)
+        private static Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer)
         {
             if (feePayer == account.Address) return new[]
                 {

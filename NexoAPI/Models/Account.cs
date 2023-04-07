@@ -41,13 +41,13 @@ namespace NexoAPI.Models
 
     public class AccountResponse
     {
-        public AccountResponse(Account p)
+        public AccountResponse(Account p, User currentUser)
         {
             Address = p.Address;
             Owners = p.Owners.Split(',');
             Threshold = p.Threshold;
-            Remark = p.Remark.First().RemarkName;
-            CreateTime = p.Remark.First().CreateTime;
+            Remark = p.Remark.FirstOrDefault(p => p.User == currentUser)?.RemarkName;
+            CreateTime = p.Remark.Min(p => p.CreateTime);
             Nep17ValueUsd = Helper.GetNep17AssetsValue(p.Address);
         }
 
@@ -57,7 +57,7 @@ namespace NexoAPI.Models
 
         public int Threshold { get; set; }
 
-        public string Remark { get; set; }
+        public string? Remark { get; set; }
 
         public DateTime CreateTime { get; set; }
 
