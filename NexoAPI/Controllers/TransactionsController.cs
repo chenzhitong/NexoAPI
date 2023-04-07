@@ -285,37 +285,66 @@ namespace NexoAPI.Controllers
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
 
             var script = contractHash.MakeScript("transfer", multiAccount, receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
-
-            var signers = new[]
+            var signers = new Neo.Network.P2P.Payloads.Signer[0];
+            if (feePayer == account.Address)
             {
-                new Neo.Network.P2P.Payloads.Signer
+                signers = new[]
                 {
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
-                    Account = feePayerAccount
-                },
-                new Neo.Network.P2P.Payloads.Signer
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = multiAccount
+                    }
+                };
+            }
+            else
+            {
+                signers = new[]
                 {
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
-                    Account = multiAccount
-                }
-            };
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = feePayerAccount
+                    },
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = multiAccount
+                    }
+                };
+            }
 
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-            tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
+            if (feePayer == account.Address)
             {
-                new Neo.Network.P2P.Payloads.Witness()
+                tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
                 {
-                    InvocationScript = null,
-                    VerificationScript = feePayer == account.Address ? account.GetScript() : _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
-                },
-                new Neo.Network.P2P.Payloads.Witness()
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = account.GetScript()
+                    }
+                };
+            }
+            else
+            {
+
+                tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
                 {
-                    InvocationScript = null,
-                    VerificationScript = account.GetScript()
-                }
-            };
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
+                    },
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = account.GetScript()
+                    }
+                };
+            }
             var base64 = Convert.ToBase64String(tx.ToArray());
-            tx.NetworkFee = Helper.CalculateNetworkFee(tx);
+            tx.NetworkFee = Helper.Client.CalculateNetworkFeeAsync(tx).Result;
             return tx;
         }
 
@@ -342,38 +371,66 @@ namespace NexoAPI.Controllers
             using ScriptBuilder scriptBuilder = new();
             scriptBuilder.EmitDynamicCall(contractHash, operation, parameters.ToArray());
             script = scriptBuilder.ToArray();
-
-            var signers = new[]
+            var signers = new Neo.Network.P2P.Payloads.Signer[0];
+            if (feePayer == account.Address)
             {
-                new Neo.Network.P2P.Payloads.Signer
+                signers = new[]
                 {
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
-                    Account = feePayerAccount
-                },
-                new Neo.Network.P2P.Payloads.Signer
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = multiAccount
+                    }
+                };
+            }
+            else
+            {
+                signers = new[]
                 {
-                    Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
-                    Account = multiAccount
-                }
-            };
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = feePayerAccount
+                    },
+                    new Neo.Network.P2P.Payloads.Signer
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = multiAccount
+                    }
+                };
+            }
 
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-
-            tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
+            if (feePayer == account.Address)
             {
-                new Neo.Network.P2P.Payloads.Witness()
+                tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
                 {
-                    InvocationScript = null,
-                    VerificationScript = feePayer == account.Address ? account.GetScript() : _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
-                },
-                new Neo.Network.P2P.Payloads.Witness()
-                {
-                    InvocationScript = null,
-                    VerificationScript = account.GetScript()
-                }
-            };
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = account.GetScript()
+                    }
+                };
+            }
+            else
+            {
 
-            tx.NetworkFee = Helper.CalculateNetworkFee(tx);
+                tx.Witnesses = new Neo.Network.P2P.Payloads.Witness[]
+                {
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = _context.User.FirstOrDefault(p => p.Address == feePayer).GetScript()
+                    },
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = account.GetScript()
+                    }
+                };
+            }
+            var base64 = Convert.ToBase64String(tx.ToArray());
+            tx.NetworkFee = Helper.Client.CalculateNetworkFeeAsync(tx).Result;
             return tx;
         }
     }

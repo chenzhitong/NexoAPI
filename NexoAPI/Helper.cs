@@ -144,22 +144,6 @@ namespace NexoAPI
             }
         }
 
-        public static long CalculateNetworkFee(Neo.Network.P2P.Payloads.Transaction tx)
-        {
-            try
-            {
-                var base64 = Convert.ToBase64String(tx.ToArray());
-                var response = PostWebRequest(ConfigHelper.AppSetting("SeedNode"), "{\"jsonrpc\":\"2.0\",\"method\":\"calculatenetworkfee\",\"params\":[\"" + base64 + "\"],\"id\":1}");
-                var jobject = JObject.Parse(response);
-                var networkFee = Convert.ToInt64(jobject["result"]["networkfee"]);
-                return networkFee;
-            }
-            catch (Exception)
-            {
-                throw new Exception("Exception in CalculateNetworkFee");
-            }
-        }
-
         public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
         public static UInt160 ToScriptHash(this string address)
