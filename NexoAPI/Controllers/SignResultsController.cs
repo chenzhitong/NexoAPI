@@ -98,7 +98,7 @@ namespace NexoAPI.Controllers
             if (approved)
             {
                 //Signature 检查
-                if (!Helper.SignatureIsValid(request.Signature))
+                if (!string.IsNullOrEmpty(request.Signature) && !Helper.SignatureIsValid(request.Signature))
                 {
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature incorrect.", data = $"Signature: {request.Signature}" });
                 }
@@ -111,8 +111,6 @@ namespace NexoAPI.Controllers
 
                 //验证签名
                 var message = Helper.GetSignData(new UInt256(tx.Hash[2..].HexToBytes().Reverse().ToArray()));
-
-                //也许不用验证
                 if (!Helper.VerifySignature(message, currentUser.PublicKey, request.Signature))
                 {
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification failure.", data = $"SignData: {message.ToHexString()}" });

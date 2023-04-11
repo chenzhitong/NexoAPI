@@ -39,7 +39,7 @@ namespace NexoAPI.Models
 
         public string Params { get; set; } = string.Empty;
 
-        public string Amount { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
 
         public string Destination { get; set; } = string.Empty;
     }
@@ -90,7 +90,7 @@ namespace NexoAPI.Models
                     Status = p.Status.ToString(),
                     ContractHash = p.ContractHash,
                     Operation = p.Operation,
-                    Params = string.IsNullOrEmpty(p.Params) ? null : JArray.Parse(p.Params)
+                    Params = JArray.Parse(p.Params)
                 };
             }
             else if (p.Type == TransactionType.Nep17Transfer)
@@ -108,7 +108,7 @@ namespace NexoAPI.Models
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
                     ContractHash = p.ContractHash,
-                    Amount = p.Amount,
+                    Amount = p.Amount.ToString(),
                     Destination = p.Destination,
                     
                 };
@@ -122,7 +122,7 @@ namespace NexoAPI.Models
                 }
                 return temp;
             }
-            return null;
+            return true;
         }
 
     }

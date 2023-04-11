@@ -200,6 +200,10 @@ namespace NexoAPI.Controllers
                 if (type == TransactionType.Invocation)
                 {
                     tx.Operation = request.Operation;
+                    if (request.Params is null || string.IsNullOrEmpty(request.Params.ToString()))
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The Params field is required." });
+                    }
                     tx.Params = request.Params.ToString();
                     try
                     {
@@ -223,7 +227,11 @@ namespace NexoAPI.Controllers
                     try
                     {
                         amount = Helper.ChangeToDecimal(request.Amount);
-                        tx.Amount = request.Amount;
+                        if (amount < 0)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Amount is incorrect.", data = $"Amount: {request.Amount}" });
+                        }
+                        tx.Amount = amount;
                     }
                     catch (Exception)
                     {
@@ -280,7 +288,7 @@ namespace NexoAPI.Controllers
             return tx;
         }
 
-        private Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
+        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
         {
             var parameters = new List<ContractParameter>();
             foreach (var p in contractParameters)
@@ -292,7 +300,7 @@ namespace NexoAPI.Controllers
                 }
                 catch (Exception)
                 {
-                    throw new ArgumentException(t.ToString());
+                    throw new ArgumentException(t?.ToString());
                 }
             }
 

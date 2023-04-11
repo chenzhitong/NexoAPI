@@ -17,7 +17,7 @@ namespace NexoAPI
             context.Result = new ObjectResult(new
             {
                 Code = "InternalError",
-                Message = $"{context.Exception.GetType()} {context.Exception.Message}",
+                Message = $"{context.Exception?.GetType()} {context.Exception?.Message}",
                 Data = context.Exception?.StackTrace?.Trim()
             });
         }
