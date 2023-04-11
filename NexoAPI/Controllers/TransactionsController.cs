@@ -231,7 +231,7 @@ namespace NexoAPI.Controllers
                         {
                             return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Amount is incorrect.", data = $"Amount: {request.Amount}" });
                         }
-                        tx.Amount = amount;
+                        tx.Amount = request.Amount;
                     }
                     catch (Exception)
                     {

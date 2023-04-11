@@ -3,6 +3,7 @@ using Neo.Network.RPC;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Migrations;
 using Org.BouncyCastle.Asn1.Pkcs;
+using System.Runtime.CompilerServices;
 using System.Security.Policy;
 
 namespace NexoAPI.Models
@@ -39,7 +40,7 @@ namespace NexoAPI.Models
 
         public string Params { get; set; } = string.Empty;
 
-        public decimal Amount { get; set; }
+        public string Amount { get; set; } = string.Empty;
 
         public string Destination { get; set; } = string.Empty;
     }
@@ -108,7 +109,7 @@ namespace NexoAPI.Models
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
                     ContractHash = p.ContractHash,
-                    Amount = p.Amount.ToString(),
+                    Amount = p.Amount,
                     Destination = p.Destination,
                     
                 };

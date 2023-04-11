@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CodeAnalysis.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using NexoAPI.Models;
 
 namespace NexoAPI.Data
