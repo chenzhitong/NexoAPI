@@ -273,7 +273,7 @@ namespace NexoAPI.Controllers
             _context.Transaction.Add(tx);
             await _context.SaveChangesAsync();
 
-            return new(new { });
+            return new(tx.Hash);
         }
 
         private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)

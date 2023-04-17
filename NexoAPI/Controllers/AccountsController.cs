@@ -214,7 +214,7 @@ namespace NexoAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            return new(new { });
+            return new(account.Address);
         }
 
         [HttpDelete("{address}")]
