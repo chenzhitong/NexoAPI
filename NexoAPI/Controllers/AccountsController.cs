@@ -115,7 +115,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
             //Address 不能被标记为已删除
-            if (account.Remark.First().IsDeleted)
+            if (account.Remark.First(p => p.User == currentUser).IsDeleted)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
@@ -242,7 +242,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
             //Address 不能被标记为已删除
-            if (account.Remark.First().IsDeleted)
+            if (account.Remark.First(p => p.User == currentUser).IsDeleted)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
@@ -300,7 +300,7 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} does not exist." });
             }
             //Address 不能被标记为已删除
-            if (account.Remark.First().IsDeleted)
+            if (account.Remark.First(p => p.User == currentUser).IsDeleted)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Multi-Sign Address {address} is deleted." });
             }
