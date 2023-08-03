@@ -43,6 +43,8 @@ namespace NexoAPI.Models
         public string Amount { get; set; } = string.Empty;
 
         public string Destination { get; set; } = string.Empty;
+
+        public string? FailReason { get; set; }
     }
 
     public class TransactionRequest
@@ -89,6 +91,7 @@ namespace NexoAPI.Models
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
+                    FailReason = p.FailReason,
                     ContractHash = p.ContractHash,
                     Operation = p.Operation,
                     Params = JArray.Parse(p.Params)
@@ -96,7 +99,7 @@ namespace NexoAPI.Models
             }
             else if (p.Type == TransactionType.Nep17Transfer)
             {
-                var temp =  new Nep17TransferTransactionResponse()
+                var temp = new Nep17TransferTransactionResponse()
                 {
                     Account = p.Account.Address,
                     Type = p.Type.ToString(),
@@ -108,6 +111,7 @@ namespace NexoAPI.Models
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
+                    FailReason = p.FailReason,
                     ContractHash = p.ContractHash,
                     Amount = p.Amount,
                     Destination = p.Destination,
@@ -151,6 +155,8 @@ namespace NexoAPI.Models
 
         public string Status { get; set; }
 
+        public string? FailReason { get; set; }
+
         public string ContractHash { get; set; }
 
         public string Operation { get; set; }
@@ -180,6 +186,8 @@ namespace NexoAPI.Models
 
         public string Status { get; set; }
 
+        public string FailReason { get; set; }
+
         public string ContractHash { get; set; }
 
         public string Amount { get; set; }
@@ -201,5 +209,6 @@ namespace NexoAPI.Models
         Expired, //已失效，过了交易有效块高
         Executing, //执行中，已被发到链上执行
         Executed, //已执行，链上已执行完成（可能失败）
+        Failed, //上链失败（被节点拒绝，比如手续费不足）
     }
 }

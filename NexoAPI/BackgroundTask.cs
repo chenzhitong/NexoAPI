@@ -103,6 +103,9 @@ namespace NexoAPI
                         catch (Exception e)
                         {
                             _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
+                            tx.Status = Models.TransactionStatus.Failed;
+                            tx.FailReason = e.Message;
+                            tx.ExecuteTime = DateTime.UtcNow;
                         }
                     }
                 }
