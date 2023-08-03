@@ -63,7 +63,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<BackgroundTask>();
 builder.Services.AddCors(options =>
 {

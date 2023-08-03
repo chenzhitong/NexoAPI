@@ -67,7 +67,11 @@ namespace NexoAPI
                         {
                             using ScriptBuilder scriptBuilder = new();
                             scriptBuilder.EmitPush(feePayerSignResult.Signature.HexToBytes());
-                            rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
+                            var old = rawTx.Witnesses.FirstOrDefault(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString());
+                            if (old == null)
+                                rawTx.Witnesses.Append(new Witness() { InvocationScript = scriptBuilder.ToArray(), VerificationScript = feePayerSignResult.Signer.GetScript() });
+                            else
+                                old.InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(feePayerSignResult);
                         }

@@ -95,13 +95,13 @@ namespace NexoAPI.Controllers
             {
                 var cursorJson = JObject.Parse(cursor);
                 var cursorTime = DateTime.UtcNow;
-
+                
                 //createTime 检查
                 try
                 {
-                    //按时间倒序排序后，筛选早于等于 Cursor CreateTime 时间的数据
-                    cursorTime = DateTime.Parse(cursorJson?["createTime"]?.ToString() ?? DateTime.UtcNow.ToString());
-                    list = list.Where(p => p.CreateTime <= cursorTime).ToList();
+                    cursorTime = (DateTime)cursorJson["createTime"];
+                    //按时间倒序排序后，筛选早于等于 Cursor CreateTime 时间的数据（精确到毫秒，忽略更小精度）
+                    list = list.Where(p => new DateTime(p.CreateTime.Year, p.CreateTime.Month, p.CreateTime.Day, p.CreateTime.Hour, p.CreateTime.Minute, p.CreateTime.Second, p.CreateTime.Millisecond) <= cursorTime).ToList();
                 }
                 catch (Exception)
                 {
