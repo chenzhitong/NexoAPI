@@ -48,7 +48,7 @@ namespace NexoAPI
                 {
 
                     _logger.Error($"后台任务运行时种子节点连接失败 {ex.Message}");
-                    break;
+                    Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
                 }
 
                 //后台任务一：根据用户签名修改交易的RawData
@@ -67,11 +67,11 @@ namespace NexoAPI
                         {
                             using ScriptBuilder scriptBuilder = new();
                             scriptBuilder.EmitPush(feePayerSignResult.Signature.HexToBytes());
-                            var old = rawTx.Witnesses.FirstOrDefault(p => p.VerificationScript.ToArray().ToHexString() == feePayerSignResult.Signer.GetScript().ToHexString());
-                            if (old == null)
-                                rawTx.Witnesses.Append(new Witness() { InvocationScript = scriptBuilder.ToArray(), VerificationScript = feePayerSignResult.Signer.GetScript() });
+                            var feePayerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == feePayerSignResult.Signer.Address);
+                            if (feePayerWitness == null)
+                                _logger.Error($"构造交易时出错，feePayer不在交易的Witness中，TxId = {tx.Hash}, feePayer: {feePayerSignResult.Signer.Address}");
                             else
-                                old.InvocationScript = scriptBuilder.ToArray();
+                                feePayerWitness.InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(feePayerSignResult);
                         }

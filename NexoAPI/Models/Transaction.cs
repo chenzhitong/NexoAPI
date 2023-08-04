@@ -75,6 +75,12 @@ namespace NexoAPI.Models
 
     public class TransactionResponse
     {
+        class TokenCache
+        {
+            public string ContractHash { get; set; }
+            public string TokenSymbol { get; set; }
+        }
+        static List<TokenCache> Cache = new List<TokenCache>();
         public static object GetResponse(Transaction p)
         {
             if (p.Type == TransactionType.Invocation)
@@ -119,7 +125,16 @@ namespace NexoAPI.Models
                 };
                 try
                 {
-                    temp.TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
+                    var c = Cache.FirstOrDefault(c => c.ContractHash == p.ContractHash);
+                    if (c != null)
+                    {
+                        temp.TokenSymbol = c.TokenSymbol;
+                    }
+                    else
+                    {
+                        temp.TokenSymbol = new Nep17API(Helper.Client).GetTokenInfoAsync(p.ContractHash).Result.Symbol;
+                        Cache.Add(new TokenCache() { ContractHash = p.ContractHash, TokenSymbol = temp.TokenSymbol });
+                    }
                 }
                 catch (Exception)
                 {
@@ -131,6 +146,7 @@ namespace NexoAPI.Models
         }
 
     }
+
 
     public class InvocationTransactionResponse
     {

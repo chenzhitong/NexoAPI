@@ -15,9 +15,9 @@ using System.Security.Policy;
 using NuGet.Protocol.Plugins;
 using Neo.IO;
 using Akka.Util.Internal;
-using Org.BouncyCastle.Math;
 using Neo.Network.RPC.Models;
 using System.Security.Cryptography.X509Certificates;
+using System.Numerics;
 
 namespace NexoAPI.Controllers
 {
@@ -253,6 +253,10 @@ namespace NexoAPI.Controllers
                         tx.Hash = rawTx.Hash.ToString();
                         tx.Params = string.Empty;
                     }
+                    catch (ArgumentException)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = $"Amount exceeds maximum accuracy.", data = $"Amount: {request.Amount}" });
+                    }
                     catch (Exception ex)
                     {
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
@@ -279,7 +283,16 @@ namespace NexoAPI.Controllers
         private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
-            var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, (int)((double)amount * Math.Pow(10, tokenInfo.Decimals)), true);
+            var bigInteger = new BigInteger();
+            try
+            {
+                bigInteger = new BigDecimal(amount, tokenInfo.Decimals).Value;
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException();
+            }
+            var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, bigInteger, true);
 
             var signers = CalculateSigners(account, feePayer);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
@@ -353,8 +366,7 @@ namespace NexoAPI.Controllers
                 };
             else
             {
-                var index = account.Owners.Split(',').ToList().IndexOf(feePayer);
-                var feePayerPubkey = account.PublicKeys.Split(',').ToList()[index];
+                var feePayerPubkey = account.PublicKeys.Split(',').ToList().FirstOrDefault(p => Contract.CreateSignatureContract(ECPoint.Parse(p, ECCurve.Secp256r1)).ScriptHash.ToAddress() == feePayer);
                 var script = Contract.CreateSignatureContract(ECPoint.Parse(feePayerPubkey, ECCurve.Secp256r1)).Script;
                 var witness = new[]
                 {
