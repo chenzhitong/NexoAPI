@@ -84,7 +84,7 @@ namespace NexoAPI
                         if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString() && p.InvocationScript.Length > 0))
                         {
                             using ScriptBuilder scriptBuilder = new();
-                            otherSignResult.OrderBy(p => p.Signer.PublicKey).ForEach(p => scriptBuilder.EmitPush(p.Signature.HexToBytes()));
+                            otherSignResult.OrderByDescending(p => p.Signer.PublicKey).ForEach(p => scriptBuilder.EmitPush(p.Signature.HexToBytes()));
                             rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(tx);
