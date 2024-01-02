@@ -78,13 +78,13 @@ namespace NexoAPI
                     }
 
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
-                    var otherSignResult = tx.SignResult.Where(p => p.Approved && tx.Account.Owners.Contains(p.Signer.Address)).OrderByDescending(p => p.Signer.PublicKey).Take(tx.Account.Threshold).ToList();
+                    var otherSignResult = tx.SignResult.Where(p => p.Approved && tx.Account.Owners.Contains(p.Signer.Address)).Take(tx.Account.Threshold).ToList();
                     if (otherSignResult?.Count == tx.Account.Threshold)
                     {
                         if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString() && p.InvocationScript.Length > 0))
                         {
                             using ScriptBuilder scriptBuilder = new();
-                            otherSignResult.ForEach(p => scriptBuilder.EmitPush(p.Signature.HexToBytes()));
+                            otherSignResult.OrderBy(p => Neo.Cryptography.ECC.ECPoint.Parse(p.Signer.PublicKey, Neo.Cryptography.ECC.ECCurve.Secp256r1)).ForEach(p => scriptBuilder.EmitPush(p.Signature.HexToBytes()));
                             rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(tx);
