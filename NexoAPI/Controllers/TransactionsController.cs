@@ -169,16 +169,16 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash is incorrect.", data = $"Contract hash: {request.ContractHash}" });
             }
-            RpcNep17TokenInfo tokenInfo;
+            ContractState contractState;
             try
             {
-                tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
+                contractState = Helper.Client.GetContractStateAsync(request.ContractHash).Result;
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=1" });
             }
-            if (tokenInfo is null)
+            if (contractState is null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The contract is not found in the current network.", data = $"Contract hash: {request.ContractHash}, Network: {ProtocolSettings.Load(ConfigHelper.AppSetting("Config")).Network}" });
             }
@@ -217,7 +217,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception ex)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=2" });
                     }
                 }
                 else if (type == TransactionType.Nep17Transfer)
@@ -259,7 +259,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception ex)
                     {
-                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}" });
+                        return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=3" });
                     }
                 }
             }
