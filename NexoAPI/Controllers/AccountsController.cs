@@ -126,7 +126,14 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "The current user must be in the owners of the requested address account", data = $"Current User: {currentUser.Address}" });
             }
 
-            account.Nep17ValueUsd = Helper.GetNep17AssetsValue(address);
+            try
+            {
+                account.Nep17ValueUsd = Helper.GetNep17AssetsValue(address);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "An error occurs when requesting the OneGateExplorer API." });
+            }
             return new ObjectResult(new AccountResponse(account, currentUser));
         }
 
