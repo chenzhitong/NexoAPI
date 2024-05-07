@@ -74,6 +74,7 @@ namespace NexoAPI
                                 feePayerWitness.InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(feePayerSignResult);
+                            _context.SaveChanges();
                         }
                     }
 
@@ -88,11 +89,14 @@ namespace NexoAPI
                             rawTx.Witnesses.First(p => p.VerificationScript.ToArray().ToHexString() == tx.Account.GetScript().ToHexString()).InvocationScript = scriptBuilder.ToArray();
                             tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                             _context.Update(tx);
+                            _context.SaveChanges();
                         }
                     }
 
                     //发送交易
-                    if (rawTx.Witnesses.All(p => p.InvocationScript.Length > 0))
+                    //仅当签名完成且未发送，或已发送时间超过60秒，则广播交易
+                    if (rawTx.Witnesses.All(p => p.InvocationScript.Length > 0) && tx.Status == Models.TransactionStatus.Signing ||
+                        tx.Status == Models.TransactionStatus.Executing && (DateTime.UtcNow - tx.ExecuteTime).TotalSeconds > 60)
                     {
                         try
                         {
@@ -102,13 +106,19 @@ namespace NexoAPI
                         }
                         catch (Exception e)
                         {
-                            _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
-                            tx.Status = Models.TransactionStatus.Failed;
-                            tx.FailReason = e.Message;
-                            tx.ExecuteTime = DateTime.UtcNow;
+                            if (tx.Status != Models.TransactionStatus.Executed)
+                            {
+                                _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
+                                tx.Status = Models.TransactionStatus.Failed;
+                                tx.FailReason = e.Message;
+                                tx.ExecuteTime = DateTime.UtcNow;
+                            }
                         }
+                        _context.Update(tx);
+                        _context.SaveChanges();
                     }
                 }
+
 
                 //后台任务二：检查交易是否上链并修改交易状态
                 _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing).ToList().ForEach(p =>
@@ -117,6 +127,7 @@ namespace NexoAPI
                     {
                         p.Status = Models.TransactionStatus.Executed;
                         _context.Update(p);
+                        _context.SaveChanges();
                     }
                 });
 
@@ -128,6 +139,7 @@ namespace NexoAPI
                     {
                         p.Status = Models.TransactionStatus.Expired;
                         _context.Update(p);
+                        _context.SaveChanges();
                     }
                 });
 
