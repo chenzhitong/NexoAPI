@@ -46,8 +46,7 @@ namespace NexoAPI
                 }
                 catch (Exception ex)
                 {
-
-                    _logger.Error($"后台任务运行时种子节点连接失败 {ex.Message}");
+                    _logger.Error($"后台任务运行时种子节点连接失败 GetBlockCountAsync");
                     Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
                 }
 
@@ -123,7 +122,16 @@ namespace NexoAPI
                 //后台任务二：检查交易是否上链并修改交易状态
                 _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing).ToList().ForEach(p =>
                 {
-                    if (Helper.Client.GetTransactionHeightAsync(p.Hash).Result > 0)
+                    var height = 0u;
+                    try
+                    {
+                        height = Helper.Client.GetTransactionHeightAsync(p.Hash).Result;
+                    }
+                    catch (Exception)
+                    {
+                        _logger.Error($"后台任务运行时种子节点连接失败 GetTransactionHeightAsync");
+                    }
+                    if (height > 0)
                     {
                         p.Status = Models.TransactionStatus.Executed;
                         _context.Update(p);
@@ -132,7 +140,15 @@ namespace NexoAPI
                 });
 
                 //后台任务三：检查交易是否过期并修改交易状态
-                var blockCount = Helper.Client.GetBlockCountAsync().Result;
+                var blockCount = 0u;
+                try
+                {
+                    blockCount = Helper.Client.GetBlockCountAsync().Result;
+                }
+                catch (Exception)
+                {
+                    _logger.Error($"后台任务运行时种子节点连接失败 GetBlockCountAsync");
+                }
                 _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Signing).ToList().ForEach(p =>
                 {
                     if (blockCount > p.ValidUntilBlock)

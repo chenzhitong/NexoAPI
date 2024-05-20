@@ -18,6 +18,7 @@ using Akka.Util.Internal;
 using Neo.Network.RPC.Models;
 using System.Security.Cryptography.X509Certificates;
 using System.Numerics;
+using NLog;
 
 namespace NexoAPI.Controllers
 {
@@ -27,10 +28,12 @@ namespace NexoAPI.Controllers
     public class TransactionsController : ControllerBase
     {
         private readonly NexoAPIContext _context;
+        public readonly Logger _logger;
 
         public TransactionsController(NexoAPIContext context)
         {
-            _context = context;
+            _context = context; 
+            _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
         }
 
         [HttpGet]
@@ -176,6 +179,7 @@ namespace NexoAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(ex.Message);
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=1" });
             }
             if (contractState is null)
@@ -217,6 +221,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception ex)
                     {
+                        _logger.Error(ex.Message);
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=2" });
                     }
                 }
@@ -259,6 +264,7 @@ namespace NexoAPI.Controllers
                     }
                     catch (Exception ex)
                     {
+                        _logger.Error(ex.Message);
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = $"An error occurred while requesting the seed node: {ex.Message}", data = $"Seed node: {ConfigHelper.AppSetting("SeedNode")}, number=3" });
                     }
                 }
