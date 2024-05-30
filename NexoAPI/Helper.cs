@@ -1,5 +1,4 @@
-﻿using Akka.Actor;
-using Microsoft.CodeAnalysis.Elfie.Extensions;
+﻿using Microsoft.CodeAnalysis.Elfie.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.IO;
@@ -8,10 +7,8 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
-using NLog;
 using NuGet.Protocol;
 using System.Globalization;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -165,8 +162,8 @@ namespace NexoAPI
             var list = new List<TokenBalance>();
             if (jobject?["result"]?["result"] is null)
                 return 0;
-            foreach (var item in (jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>()).Where(item => string.IsNullOrEmpty(item?["tokenid"]?.ToString())))
-            {
+            var temp = (jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>()).Where(item => string.IsNullOrEmpty(item?["tokenid"]?.ToString()));
+            Parallel.ForEach(temp, item => {
                 var asset = item["asset"]?.ToString() ?? string.Empty;
                 var amount = ChangeToDecimal(item["balance"]?.ToString() ?? "0");
                 try
@@ -179,7 +176,7 @@ namespace NexoAPI
                 {
                     //遇到异常资产则跳过统计
                 }
-            }
+            });
 
             var response2 = JToken.Parse(PostWebRequest(ConfigHelper.AppSetting("OneGateQuoteAPI"), list.Select(p => p.ContractHash).ToArray().ToJson()));
             var sum = 0m;

@@ -2,13 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.Json;
+using Neo.Network.RPC.Models;
 using Neo.VM;
-using Neo.Wallets;
 using NexoAPI.Data;
 using NLog;
-using Neo.Network.P2P.Payloads;
-using Neo.IO;
-using Neo.Network.RPC.Models;
 
 namespace NexoAPI
 {
@@ -17,6 +14,7 @@ namespace NexoAPI
 
         public readonly Logger _logger;
         private readonly NexoAPIContext _context;
+        private bool _isRuning = false;
 
         public BackgroundTask(IServiceScopeFactory _serviceScopeFactory)
         {
@@ -27,8 +25,12 @@ namespace NexoAPI
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.Info("BackgroundTask is running.");
-
+            if (_isRuning)
+            {
+                _logger.Info("后台任务已经在运行中");
+                return;
+            }
+            _logger.Info("后台任务开始执行");
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -49,6 +51,7 @@ namespace NexoAPI
                     _logger.Error($"后台任务运行时种子节点连接失败 GetBlockCountAsync");
                     Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
                 }
+                _isRuning = true;
 
                 //后台任务一：根据用户签名修改交易的RawData
                 var list1 = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult).ThenInclude(s => s.Signer).
@@ -160,6 +163,8 @@ namespace NexoAPI
                 });
 
                 _context.SaveChanges();
+                _isRuning = false;
+
                 await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
             }
         }

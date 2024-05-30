@@ -1,14 +1,10 @@
-﻿using Akka.Actor;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Neo.Cryptography.ECC;
 using Neo.SmartContract;
-using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
-using NexoAPI.Migrations;
 using NexoAPI.Models;
-using System.Net;
 
 namespace NexoAPI.Controllers
 {
@@ -86,7 +82,9 @@ namespace NexoAPI.Controllers
             {
                 list = _context.Account.Include(p => p.Remark).Where(p => !p.Remark.Any(r => r.User == currentUser) || !p.Remark.First(r => r.User == currentUser).IsDeleted).Where(p => p.Owners.Contains(owner)).OrderByDescending(p => p.Remark.First(r => r.User == currentUser).CreateTime).ThenBy(p => p.Address).ToList();
             }
-            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(p => new AccountResponse(p, currentUser));
+            var result = new List<AccountResponse>();
+            var temp = list.Skip(skip ?? 0).Take(limit ?? 100).ToList();
+            Parallel.ForEach(temp, p => { result.Add(new AccountResponse(p, currentUser)); });
             return new ObjectResult(result);
         }
 

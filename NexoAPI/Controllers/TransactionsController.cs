@@ -1,24 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Neo.Network.RPC;
-using Neo.SmartContract.Native;
-using Neo.Wallets;
 using Neo;
+using Neo.Cryptography.ECC;
+using Neo.IO;
+using Neo.Network.RPC;
+using Neo.SmartContract;
+using Neo.VM;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
-using Neo.SmartContract;
-using Neo.Cryptography.ECC;
-using Neo.VM;
-using Akka.Actor;
-using System.Security.Policy;
-using NuGet.Protocol.Plugins;
-using Neo.IO;
-using Akka.Util.Internal;
-using Neo.Network.RPC.Models;
-using System.Security.Cryptography.X509Certificates;
-using System.Numerics;
 using NLog;
+using System.Numerics;
 
 namespace NexoAPI.Controllers
 {
@@ -117,7 +109,9 @@ namespace NexoAPI.Controllers
                     list.RemoveRange(0, startIndex);
             }
 
-            var result = list.Skip(skip ?? 0).Take(limit ?? 100).ToList().ConvertAll(TransactionResponse.GetResponse);
+            var result = new List<object>();
+            var temp = list.Skip(skip ?? 0).Take(limit ?? 100).ToList();
+            Parallel.ForEach(temp, p => result.Add(TransactionResponse.GetResponse(p)));
 
             return new ObjectResult(result);
         }
