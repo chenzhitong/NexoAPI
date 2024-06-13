@@ -1,8 +1,5 @@
-﻿using Azure;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using NLog;
-using System.Net;
-using System.Text;
 
 namespace NexoAPI
 {

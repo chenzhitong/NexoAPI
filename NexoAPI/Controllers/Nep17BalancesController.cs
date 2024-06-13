@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
-using Neo.Wallets;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Models;
 

@@ -7,7 +7,6 @@ using Neo.SmartContract;
 using Neo.Wallets;
 using NexoAPI.Data;
 using NexoAPI.Models;
-using NLog;
 using System.Security.Cryptography;
 
 namespace NexoAPI.Controllers
@@ -115,9 +114,9 @@ namespace NexoAPI.Controllers
             var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress();
             var nonce = new NoncesController().PostNonce();
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce).Replace("\r\n", "\n");
-;
+            ;
             var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
-            var signature = Crypto.Sign(hexStr, privateKey, publicKey.EncodePoint(false)[1..]);
+            var signature = Crypto.Sign(hexStr, privateKey, Neo.Cryptography.ECC.ECCurve.Secp256r1);
             return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
         }
 

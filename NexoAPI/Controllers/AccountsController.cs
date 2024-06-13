@@ -85,6 +85,7 @@ namespace NexoAPI.Controllers
             var result = new List<AccountResponse>();
             var temp = list.Skip(skip ?? 0).Take(limit ?? 100).ToList();
             Parallel.ForEach(temp, p => { result.Add(new AccountResponse(p, currentUser)); });
+            result.OrderBy(p => p.CreateTime);
             return new ObjectResult(result);
         }
 

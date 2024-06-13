@@ -18,6 +18,7 @@ namespace NexoAPI
             return;
         }
 
-        public void OnResultExecuted(ResultExecutedContext context) { }
+        public void OnResultExecuted(ResultExecutedContext context)
+        { }
     }
 }

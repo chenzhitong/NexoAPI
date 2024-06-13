@@ -1,6 +1,5 @@
 ﻿using Neo.Cryptography.ECC;
 using Neo.SmartContract;
-using System.Security.Cryptography.X509Certificates;
 
 namespace NexoAPI.Models
 {

@@ -23,6 +23,7 @@ namespace NexoAPI
 
         [GeneratedRegex("^Bearer [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")]
         private static partial Regex AuthorizationRegex();
+
         public static bool AuthorizationIsValid(string input, out string output)
         {
             output = input.Replace("Bearer ", string.Empty);
@@ -31,13 +32,16 @@ namespace NexoAPI
 
         [GeneratedRegex("^0[23][0-9a-f]{64}$")]
         private static partial Regex PublicKeyRegex();
+
         public static bool PublicKeyIsValid(string input) => PublicKeyRegex().IsMatch(input);
 
         [GeneratedRegex("^[0-9a-f]{128}$")]
         private static partial Regex SignatureRegex();
+
         public static bool SignatureIsValid(string input) => SignatureRegex().IsMatch(input);
 
-        public static RpcClient Client { get { return new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null); } }
+        public static RpcClient Client
+        { get { return new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null); } }
 
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
@@ -82,6 +86,7 @@ namespace NexoAPI
                 result[i] = byte.Parse(value.Substring(i * 2, 2), NumberStyles.AllowHexSpecifier);
             return result;
         }
+
         public static string Sha256(this string input)
         {
             return BitConverter.ToString(SHA256.HashData(Encoding.UTF8.GetBytes(input))).Replace("-", string.Empty);
@@ -141,7 +146,7 @@ namespace NexoAPI
             }
         }
 
-        public async static Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
+        public static async Task<uint> GetBlockCount() => await Client.GetBlockCountAsync().ConfigureAwait(false);
 
         public static UInt160 ToScriptHash(this string address)
         {
@@ -163,7 +168,8 @@ namespace NexoAPI
             if (jobject?["result"]?["result"] is null)
                 return 0;
             var temp = (jobject?["result"]?["result"] ?? Enumerable.Empty<JToken>()).Where(item => string.IsNullOrEmpty(item?["tokenid"]?.ToString()));
-            Parallel.ForEach(temp, item => {
+            Parallel.ForEach(temp, item =>
+            {
                 var asset = item["asset"]?.ToString() ?? string.Empty;
                 var amount = ChangeToDecimal(item["balance"]?.ToString() ?? "0");
                 try
@@ -187,13 +193,14 @@ namespace NexoAPI
 
             return sum;
         }
+
         public static decimal ChangeToDecimal(string strData)
         {
             return strData.Contains('E', StringComparison.OrdinalIgnoreCase) ? Convert.ToDecimal(decimal.Parse(strData.ToString(), NumberStyles.Float)) : Convert.ToDecimal(strData);
         }
     }
 
-    class TokenBalance
+    internal class TokenBalance
     {
         public string ContractHash { get; set; }
 

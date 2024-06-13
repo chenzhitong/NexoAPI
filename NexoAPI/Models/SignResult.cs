@@ -6,7 +6,7 @@
 
         public Transaction Transaction { get; set; }
 
-        public User Signer {get; set; }
+        public User Signer { get; set; }
 
         public bool Approved { get; set; }
 
@@ -19,7 +19,6 @@
 
         public string? Signature { get; set; }
     }
-
 
     public class SignResultResponse
     {

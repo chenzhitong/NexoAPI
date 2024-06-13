@@ -2,7 +2,6 @@
 {
     public class ConfigHelper
     {
-
         private static ConfigHelper _appSettings;
 
         public string appSettingValue { get; set; }

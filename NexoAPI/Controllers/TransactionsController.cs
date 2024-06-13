@@ -24,7 +24,7 @@ namespace NexoAPI.Controllers
 
         public TransactionsController(NexoAPIContext context)
         {
-            _context = context; 
+            _context = context;
             _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
         }
 
@@ -90,7 +90,7 @@ namespace NexoAPI.Controllers
             {
                 var cursorJson = JObject.Parse(cursor);
                 var cursorTime = DateTime.UtcNow;
-                
+
                 //createTime 检查
                 try
                 {
@@ -112,7 +112,7 @@ namespace NexoAPI.Controllers
             var result = new List<object>();
             var temp = list.Skip(skip ?? 0).Take(limit ?? 100).ToList();
             Parallel.ForEach(temp, p => result.Add(TransactionResponse.GetResponse(p)));
-
+            result.OrderBy(p => (p as Transaction).CreateTime);
             return new ObjectResult(result);
         }
 

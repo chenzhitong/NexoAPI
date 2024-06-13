@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using NLog;
 
 namespace NexoAPI
@@ -8,6 +7,7 @@ namespace NexoAPI
     public class GlobalExceptionFilter : IExceptionFilter
     {
         public Logger _logger;
+
         public void OnException(ExceptionContext context)
         {
             _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();

@@ -1,10 +1,5 @@
-﻿using Akka.Actor;
-using Neo.Network.RPC;
+﻿using Neo.Network.RPC;
 using Newtonsoft.Json.Linq;
-using NexoAPI.Migrations;
-using Org.BouncyCastle.Asn1.Pkcs;
-using System.Runtime.CompilerServices;
-using System.Security.Policy;
 
 namespace NexoAPI.Models
 {
@@ -75,12 +70,14 @@ namespace NexoAPI.Models
 
     public class TransactionResponse
     {
-        class TokenCache
+        private class TokenCache
         {
             public string ContractHash { get; set; }
             public string TokenSymbol { get; set; }
         }
-        static List<TokenCache> Cache = new List<TokenCache>();
+
+        private static List<TokenCache> Cache = new List<TokenCache>();
+
         public static object GetResponse(Transaction p)
         {
             if (p.Type == TransactionType.Invocation)
@@ -121,7 +118,6 @@ namespace NexoAPI.Models
                     ContractHash = p.ContractHash,
                     Amount = p.Amount,
                     Destination = p.Destination,
-                    
                 };
                 try
                 {
@@ -144,13 +140,10 @@ namespace NexoAPI.Models
             }
             return true;
         }
-
     }
-
 
     public class InvocationTransactionResponse
     {
-
         public string Account { get; set; }
 
         public string Type { get; set; }
@@ -179,9 +172,9 @@ namespace NexoAPI.Models
 
         public JArray Params { get; set; }
     }
+
     public class Nep17TransferTransactionResponse
     {
-
         public string Account { get; set; }
 
         public string Type { get; set; }
@@ -212,6 +205,7 @@ namespace NexoAPI.Models
 
         public string TokenSymbol { get; set; }
     }
+
     public enum TransactionType
     {
         Invocation,

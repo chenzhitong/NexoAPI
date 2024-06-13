@@ -45,7 +45,7 @@ namespace NexoAPI.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Contract hash format error.", data = $"Contract hash: {item}" });
                 }
             }
-            
+
             var response = JToken.Parse(Helper.PostWebRequest(_config["OneGateQuoteAPI"], contractHashes.ToJson()));
             for (int i = 0; i < result.Count; i++)
             {

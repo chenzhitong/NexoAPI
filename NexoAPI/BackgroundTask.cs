@@ -11,7 +11,6 @@ namespace NexoAPI
 {
     public class BackgroundTask : BackgroundService
     {
-
         public readonly Logger _logger;
         private readonly NexoAPIContext _context;
         private bool _isRuning = false;
@@ -120,7 +119,6 @@ namespace NexoAPI
                         _context.SaveChanges();
                     }
                 }
-
 
                 //后台任务二：检查交易是否上链并修改交易状态
                 _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing).ToList().ForEach(p =>
