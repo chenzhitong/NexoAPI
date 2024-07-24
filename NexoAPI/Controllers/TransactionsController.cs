@@ -8,6 +8,7 @@ using Neo.SmartContract;
 using Neo.VM;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
+using NexoAPI.Migrations;
 using NexoAPI.Models;
 using NLog;
 using System.Numerics;
@@ -161,13 +162,20 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
             }
             //additionalSigner 格式检查
-            try
+            if (!string.IsNullOrEmpty(request.AdditionalSigner))
             {
-                request.AdditionalSigner.ToScriptHash();
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Additional signer is incorrect.", data = $"Additional signer: {request.AdditionalSigner}" });
+                try
+                {
+                    request.AdditionalSigner.ToScriptHash();
+                }
+                catch (Exception)
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Additional signer is incorrect.", data = $"Additional signer: {request.AdditionalSigner}" });
+                }
+                if (!_context.Account.Any(p => p.Address == request.AdditionalSigner))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Additional signer must have created an account on this site..", data = $"Additional signer: {request.AdditionalSigner}" });
+                }
             }
 
             //验证ContractHash

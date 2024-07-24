@@ -84,7 +84,7 @@ namespace NexoAPI.Controllers
             }
 
             //signer 参数必须在该交易的所属账户的 owners 中
-            if (!tx.Account.Owners.Contains(signer))
+            if (!tx.Account.Owners.Contains(signer) && tx.AdditionalSigner != signer)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
             }
@@ -120,6 +120,13 @@ namespace NexoAPI.Controllers
             {
                 //FeePayer 拒绝交易，改变交易状态为 Rejected
                 if (currentUser.Address == tx.FeePayer)
+                {
+                    tx.Status = TransactionStatus.Rejected;
+                    _context.Update(tx);
+                }
+
+                //Additional signer 拒绝交易，改变交易状态为 Rejected
+                if (currentUser.Address == tx.AdditionalSigner)
                 {
                     tx.Status = TransactionStatus.Rejected;
                     _context.Update(tx);

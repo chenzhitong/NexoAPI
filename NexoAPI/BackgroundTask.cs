@@ -78,22 +78,25 @@ namespace NexoAPI
                             _context.SaveChanges();
                         }
                     }
-                    //additionalSigner需要单独的签名
-                    var additionalSigner = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.AdditionalSigner);
-                    if (additionalSigner is not null)
+                    //如果有additionalSigner，则需要单独的签名
+                    if (!string.IsNullOrEmpty(tx.AdditionalSigner))
                     {
-                        if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == additionalSigner.Signer.GetScript().ToHexString() && p.InvocationScript.Length > 0))
+                        var additionalSigner = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.AdditionalSigner);
+                        if (additionalSigner is not null)
                         {
-                            using ScriptBuilder scriptBuilder = new();
-                            scriptBuilder.EmitPush(additionalSigner.Signature.HexToBytes());
-                            var additionalSignerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == feePayerSignResult.Signer.Address);
-                            if (additionalSigner == null)
-                                _logger.Error($"构造交易时出错，additionalSigner不在交易的Witness中，TxId = {tx.Hash}, additionalSigner: {additionalSigner.Signer.Address}");
-                            else
-                                additionalSignerWitness.InvocationScript = scriptBuilder.ToArray();
-                            tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
-                            _context.Update(feePayerSignResult);
-                            _context.SaveChanges();
+                            if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == additionalSigner.Signer.GetScript().ToHexString() && p.InvocationScript.Length > 0))
+                            {
+                                using ScriptBuilder scriptBuilder = new();
+                                scriptBuilder.EmitPush(additionalSigner.Signature.HexToBytes());
+                                var additionalSignerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == additionalSigner.Signer.Address);
+                                if (additionalSigner == null)
+                                    _logger.Error($"构造交易时出错，additionalSigner不在交易的Witness中，TxId = {tx.Hash}, additionalSigner: {additionalSigner.Signer.Address}");
+                                else
+                                    additionalSignerWitness.InvocationScript = scriptBuilder.ToArray();
+                                tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
+                                _context.Update(additionalSigner);
+                                _context.SaveChanges();
+                            }
                         }
                     }
 
