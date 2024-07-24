@@ -8,7 +8,6 @@ using Neo.SmartContract;
 using Neo.VM;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
-using NexoAPI.Migrations;
 using NexoAPI.Models;
 using NLog;
 using System.Numerics;
