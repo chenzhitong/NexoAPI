@@ -71,17 +71,17 @@ namespace NexoAPI.Controllers
                 list = signableBool ?
                     //交易是Signing状态且该owner没签过名
                     _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
-                    .Where(p => p.Account.Address == account || p.AdditionalSigner == account)
+                    .Where(p => p.Account.Address == account || p.AdditionalSigner == owner)
                     .Where(p => p.Status == TransactionStatus.Signing && !p.SignResult.Any(p => p.Signer.Address.Contains(owner))).ToList() :
                     //交易不是Signing状态或该owner签过名
                     _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
-                    .Where(p => p.Account.Address == account)
+                    .Where(p => p.Account.Address == account || p.AdditionalSigner == owner)
                     .Where(p => p.Status != TransactionStatus.Signing || p.SignResult.Any(p => p.Signer.Address.Contains(owner))).ToList();
             }
             else
             {
                 list = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
-                    .Where(p => p.Account.Address == account || p.AdditionalSigner == account).ToList();
+                    .Where(p => p.Account.Address == account || p.AdditionalSigner == owner).ToList();
             }
             list = list.OrderByDescending(p => p.CreateTime).ThenBy(p => p.Hash).ToList();
 
@@ -311,7 +311,7 @@ namespace NexoAPI.Controllers
             }
             var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, bigInteger, true);
 
-            var signers = CalculateSigners(account, feePayer);
+            var signers = CalculateSigners(account, feePayer, additionalSigner);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
             tx.Witnesses = CalculateWitnesss(account, feePayer, additionalSigner);
             tx.NetworkFee = Helper.Client.CalculateNetworkFeeAsync(tx).Result;
@@ -339,7 +339,7 @@ namespace NexoAPI.Controllers
             scriptBuilder.EmitDynamicCall(contractHash, operation, parameters.ToArray());
             script = scriptBuilder.ToArray();
 
-            var signers = CalculateSigners(account, feePayer);
+            var signers = CalculateSigners(account, feePayer, additionalSigner);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
             tx.Witnesses = CalculateWitnesss(account, feePayer, additionalSigner);
             var base64 = Convert.ToBase64String(tx.ToArray());
@@ -347,9 +347,10 @@ namespace NexoAPI.Controllers
             return tx;
         }
 
-        private Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer)
+        private Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer, string? additionalSigner)
         {
-            return feePayer == account.Address ? new[]
+            var result = new Neo.Network.P2P.Payloads.Signer[0];
+            result = feePayer == account.Address ? new[]
                 {
                     new Neo.Network.P2P.Payloads.Signer
                     {
@@ -369,11 +370,25 @@ namespace NexoAPI.Controllers
                         Account = account.GetScriptHash()
                     }
                 };
+            if (!string.IsNullOrEmpty(additionalSigner))
+            {
+                var additionalSignerScriptHash = _context.Account.First(p => p.Address == additionalSigner).GetScriptHash();
+                result = result.Append(
+                    new Neo.Network.P2P.Payloads.Signer()
+                    {
+                        Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
+                        Account = additionalSignerScriptHash
+                    }).ToArray();
+            }
+            return result;
         }
 
-        private Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer, string additionalSigner)
+        private Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer, string? additionalSigner)
         {
-            if (feePayer == account.Address) return new[]
+            var result = new Neo.Network.P2P.Payloads.Witness[0];
+            if (feePayer == account.Address)
+            {
+                result = new[]
                 {
                     new Neo.Network.P2P.Payloads.Witness()
                     {
@@ -381,12 +396,13 @@ namespace NexoAPI.Controllers
                         VerificationScript = account.GetScript()
                     }
                 };
+            }
             else
             {
                 var feePayerPubkey = account.PublicKeys.Split(',').ToList().FirstOrDefault(p => Contract.CreateSignatureContract(ECPoint.Parse(p, ECCurve.Secp256r1)).ScriptHash.ToAddress() == feePayer);
                 var script = Contract.CreateSignatureContract(ECPoint.Parse(feePayerPubkey, ECCurve.Secp256r1)).Script;
-                var additionalSignerScript = _context.Account.First(p => p.Address == additionalSigner).GetScript();
-                var witness = new[]
+
+                result = new[]
                 {
                     new Neo.Network.P2P.Payloads.Witness()
                     {
@@ -397,15 +413,20 @@ namespace NexoAPI.Controllers
                     {
                         InvocationScript = null,
                         VerificationScript = account.GetScript()
-                    },
+                    }
+                };
+            }
+            if (!string.IsNullOrEmpty(additionalSigner))
+            {
+                var additionalSignerScript = _context.Account.First(p => p.Address == additionalSigner).GetScript();
+                result = result.Append(
                     new Neo.Network.P2P.Payloads.Witness()
                     {
                         InvocationScript = null,
                         VerificationScript = additionalSignerScript
-                    }
-                };
-                return witness;
+                    }).ToArray();
             }
+            return result;
         }
     }
 }

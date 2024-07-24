@@ -36,10 +36,10 @@ namespace NexoAPI.Controllers
             {
                 var response = Helper.PostWebRequest(_config["OneGateExplorerAPI"], "{\"jsonrpc\":\"2.0\",\"id\":1,\"params\":{\"Address\":\"" + scriptHash + "\",\"Limit\":100,\"Skip\":0},\"method\":\"GetAssetsHeldByAddress\"}");
                 jobject = JObject.Parse(response);
-                if ((double)(jobject?["result"]?["totalCount"] ?? 0) > 100)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Too many assets in this address, more than 100 assets.", data = $"Address: {address}" });
-                }
+                //if ((double)(jobject?["result"]?["totalCount"] ?? 0) > 100)
+                //{
+                //    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "Too many assets in this address, more than 100 assets.", data = $"Address: {address}" });
+                //}
             }
             catch (Exception)
             {

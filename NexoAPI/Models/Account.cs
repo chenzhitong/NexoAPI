@@ -25,9 +25,25 @@ namespace NexoAPI.Models
         [NotMapped]
         public decimal Nep17ValueUsd { get; set; }
 
-        public UInt160 GetScriptHash() => Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
+        //如果 PublicKeys 只有一个，则创建单签地址，而非 1/1 多签
+        public UInt160 GetScriptHash()
+        {
+            var publicKeys = PublicKeys.Split(",").ToList();
+            if (publicKeys.Count() == 1)
+                return Contract.CreateSignatureContract(ECPoint.Parse(publicKeys.First(), ECCurve.Secp256r1)).ScriptHash;
+            else
+                return Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
+        }
 
-        public byte[] GetScript() => Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
+        //如果 PublicKeys 只有一个，则创建单签地址，而非 1/1 多签
+        public byte[] GetScript()
+        {
+            var publicKeys = PublicKeys.Split(",").ToList();
+            if (publicKeys.Count() == 1)
+                return Contract.CreateSignatureContract(ECPoint.Parse(publicKeys.First(), ECCurve.Secp256r1)).Script;
+            else
+                return Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
+        }
     }
 
     public class AccountRequest

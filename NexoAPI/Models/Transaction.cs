@@ -21,7 +21,7 @@ namespace NexoAPI.Models
 
         public string FeePayer { get; set; }
 
-        public string AdditionalSigner { get; set; }
+        public string? AdditionalSigner { get; set; }
 
         public DateTime CreateTime { get; set; }
 
@@ -52,7 +52,7 @@ namespace NexoAPI.Models
 
         public string FeePayer { get; set; }
 
-        public string AdditionalSigner { get; set; }
+        public string? AdditionalSigner { get; set; }
 
         public string ContractHash { get; set; }
 

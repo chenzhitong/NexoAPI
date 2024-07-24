@@ -42,10 +42,10 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {transactionHash} does not exist." });
             }
 
-            //当前用户必须在该交易的所属账户的 owners 中
-            if (!tx.Account.Owners.Contains(currentUser.Address))
+            //当前用户必须在该交易的所属账户的 owners 中，或在 Additional Signer 中
+            if (!tx.Account.Owners.Contains(currentUser.Address) && tx.AdditionalSigner != currentUser.Address)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The current user must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Current User: {currentUser.Address}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The current user must be in the owners or additional signer of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Current User: {currentUser.Address}" });
             }
 
             var result = _context.SignResult.Include(p => p.Signer).Where(p => p.Transaction.Hash == transactionHash).ToList().ConvertAll(p => new SignResultResponse() { TransactionHash = p.Transaction.Hash, Signer = p.Signer.Address, Approved = p.Approved, Signature = p.Signature });
@@ -86,7 +86,7 @@ namespace NexoAPI.Controllers
             //signer 参数必须在该交易的所属账户的 owners 中
             if (!tx.Account.Owners.Contains(signer) && tx.AdditionalSigner != signer)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The signer parameter must be in the owners of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = $"The signer parameter must be in the owners or additional signer of the account to which the transaction belongs", data = $"Transaction.Account.Owners: {tx.Account.Owners}, Signer: {signer}" });
             }
 
             //Approved 检查

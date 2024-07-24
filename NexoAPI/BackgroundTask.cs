@@ -89,10 +89,18 @@ namespace NexoAPI
                                 using ScriptBuilder scriptBuilder = new();
                                 scriptBuilder.EmitPush(additionalSigner.Signature.HexToBytes());
                                 var additionalSignerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == additionalSigner.Signer.Address);
-                                if (additionalSigner == null)
-                                    _logger.Error($"构造交易时出错，additionalSigner不在交易的Witness中，TxId = {tx.Hash}, additionalSigner: {additionalSigner.Signer.Address}");
-                                else
-                                    additionalSignerWitness.InvocationScript = scriptBuilder.ToArray();
+                                if (additionalSignerWitness == null)
+                                {
+                                    //_logger.Error($"构造交易时出错，additionalSigner不在交易的Witness中，TxId = {tx.Hash}, additionalSigner: {additionalSigner.Signer.Address}");
+                                    var additionalSignerScript = _context.Account.First(p => p.Address == additionalSigner.Signer.Address).GetScript();
+                                    rawTx.Witnesses = rawTx.Witnesses.Append(new Neo.Network.P2P.Payloads.Witness()
+                                    {
+                                        InvocationScript = null,
+                                        VerificationScript = additionalSignerScript
+                                    }).ToArray();
+                                }
+                                additionalSignerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == additionalSigner.Signer.Address);
+                                additionalSignerWitness.InvocationScript = scriptBuilder.ToArray();
                                 tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                                 _context.Update(additionalSigner);
                                 _context.SaveChanges();
