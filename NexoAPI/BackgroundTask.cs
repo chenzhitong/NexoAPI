@@ -78,6 +78,24 @@ namespace NexoAPI
                             _context.SaveChanges();
                         }
                     }
+                    //additionalSigner需要单独的签名
+                    var additionalSigner = tx.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == tx.AdditionalSigner);
+                    if (additionalSigner is not null)
+                    {
+                        if (!rawTx.Witnesses.Any(p => p.VerificationScript.ToArray().ToHexString() == additionalSigner.Signer.GetScript().ToHexString() && p.InvocationScript.Length > 0))
+                        {
+                            using ScriptBuilder scriptBuilder = new();
+                            scriptBuilder.EmitPush(additionalSigner.Signature.HexToBytes());
+                            var additionalSignerWitness = rawTx.Witnesses.FirstOrDefault(p => p.ScriptHash.ToAddress() == feePayerSignResult.Signer.Address);
+                            if (additionalSigner == null)
+                                _logger.Error($"构造交易时出错，additionalSigner不在交易的Witness中，TxId = {tx.Hash}, additionalSigner: {additionalSigner.Signer.Address}");
+                            else
+                                additionalSignerWitness.InvocationScript = scriptBuilder.ToArray();
+                            tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
+                            _context.Update(feePayerSignResult);
+                            _context.SaveChanges();
+                        }
+                    }
 
                     //签名数满足阈值时，其他用户的签名合并为多签账户的签名
                     var otherSignResult = tx.SignResult.Where(p => p.Approved && tx.Account.Owners.Contains(p.Signer.Address)).Take(tx.Account.Threshold).ToList();

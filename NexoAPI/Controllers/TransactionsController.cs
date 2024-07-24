@@ -160,6 +160,15 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "Forbidden", message = "FeePayer must be equal to the account or in the owners of the account", data = $"FeePayer: {request.FeePayer}" });
             }
+            //additionalSigner 格式检查
+            try
+            {
+                request.AdditionalSigner.ToScriptHash();
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Additional signer is incorrect.", data = $"Additional signer: {request.AdditionalSigner}" });
+            }
 
             //验证ContractHash
             if (!UInt160.TryParse(request.ContractHash, out UInt160 contractHash))
@@ -185,6 +194,7 @@ namespace NexoAPI.Controllers
             {
                 Account = accountItem,
                 FeePayer = request.FeePayer,
+                AdditionalSigner = request.AdditionalSigner,
                 Creator = currentUser.Address,
                 CreateTime = DateTime.UtcNow,
                 Status = TransactionStatus.Signing,
@@ -205,7 +215,7 @@ namespace NexoAPI.Controllers
                     tx.Params = request.Params.ToString();
                     try
                     {
-                        var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, contractHash, request.Operation, request.Params);
+                        var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, request.AdditionalSigner, contractHash, request.Operation, request.Params);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                     }
@@ -247,7 +257,7 @@ namespace NexoAPI.Controllers
                     }
                     try
                     {
-                        var rawTx = TransferFromMultiSignAccount(accountItem, request.FeePayer, contractHash, amount, receiver);
+                        var rawTx = TransferFromMultiSignAccount(accountItem, request.FeePayer, request.AdditionalSigner, contractHash, amount, receiver);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
                         tx.Params = string.Empty;
@@ -280,7 +290,7 @@ namespace NexoAPI.Controllers
             return new(tx.Hash);
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, decimal amount, UInt160 receiver)
+        private Neo.Network.P2P.Payloads.Transaction TransferFromMultiSignAccount(Account account, string feePayer, string additionalSigner, UInt160 contractHash, decimal amount, UInt160 receiver)
         {
             var tokenInfo = new Nep17API(Helper.Client).GetTokenInfoAsync(contractHash).Result;
             var bigInteger = new BigInteger();
@@ -296,12 +306,12 @@ namespace NexoAPI.Controllers
 
             var signers = CalculateSigners(account, feePayer);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-            tx.Witnesses = CalculateWitnesss(account, feePayer);
+            tx.Witnesses = CalculateWitnesss(account, feePayer, additionalSigner);
             tx.NetworkFee = Helper.Client.CalculateNetworkFeeAsync(tx).Result;
             return tx;
         }
 
-        private static Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, UInt160 contractHash, string operation, JArray contractParameters)
+        private Neo.Network.P2P.Payloads.Transaction InvocationFromMultiSignAccount(Account account, string feePayer, string additionalSigner, UInt160 contractHash, string operation, JArray contractParameters)
         {
             var parameters = new List<ContractParameter>();
             foreach (var p in contractParameters)
@@ -324,13 +334,13 @@ namespace NexoAPI.Controllers
 
             var signers = CalculateSigners(account, feePayer);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
-            tx.Witnesses = CalculateWitnesss(account, feePayer);
+            tx.Witnesses = CalculateWitnesss(account, feePayer, additionalSigner);
             var base64 = Convert.ToBase64String(tx.ToArray());
             tx.NetworkFee = Helper.Client.CalculateNetworkFeeAsync(tx).Result;
             return tx;
         }
 
-        private static Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer)
+        private Neo.Network.P2P.Payloads.Signer[] CalculateSigners(Account account, string feePayer)
         {
             return feePayer == account.Address ? new[]
                 {
@@ -354,7 +364,7 @@ namespace NexoAPI.Controllers
                 };
         }
 
-        private static Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer)
+        private Neo.Network.P2P.Payloads.Witness[] CalculateWitnesss(Account account, string feePayer, string additionalSigner)
         {
             if (feePayer == account.Address) return new[]
                 {
@@ -368,6 +378,7 @@ namespace NexoAPI.Controllers
             {
                 var feePayerPubkey = account.PublicKeys.Split(',').ToList().FirstOrDefault(p => Contract.CreateSignatureContract(ECPoint.Parse(p, ECCurve.Secp256r1)).ScriptHash.ToAddress() == feePayer);
                 var script = Contract.CreateSignatureContract(ECPoint.Parse(feePayerPubkey, ECCurve.Secp256r1)).Script;
+                var additionalSignerScript = _context.Account.First(p => p.Address == additionalSigner).GetScript();
                 var witness = new[]
                 {
                     new Neo.Network.P2P.Payloads.Witness()
@@ -379,6 +390,11 @@ namespace NexoAPI.Controllers
                     {
                         InvocationScript = null,
                         VerificationScript = account.GetScript()
+                    },
+                    new Neo.Network.P2P.Payloads.Witness()
+                    {
+                        InvocationScript = null,
+                        VerificationScript = additionalSignerScript
                     }
                 };
                 return witness;
