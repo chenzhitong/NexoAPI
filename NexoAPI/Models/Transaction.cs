@@ -21,6 +21,8 @@ namespace NexoAPI.Models
 
         public string FeePayer { get; set; }
 
+        public string AdditionalSigner { get; set; }
+
         public DateTime CreateTime { get; set; }
 
         public DateTime ExecuteTime { get; set; }
@@ -49,6 +51,8 @@ namespace NexoAPI.Models
         public string Type { get; set; }
 
         public string FeePayer { get; set; }
+
+        public string AdditionalSigner { get; set; }
 
         public string ContractHash { get; set; }
 
@@ -91,6 +95,7 @@ namespace NexoAPI.Models
                     ValidUntilBlock = p.ValidUntilBlock,
                     Creator = p.Creator,
                     FeePayer = p.FeePayer,
+                    AdditionalSigner = p.AdditionalSigner,
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
@@ -111,6 +116,7 @@ namespace NexoAPI.Models
                     ValidUntilBlock = p.ValidUntilBlock,
                     Creator = p.Creator,
                     FeePayer = p.FeePayer,
+                    AdditionalSigner = p.AdditionalSigner,
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
@@ -158,6 +164,8 @@ namespace NexoAPI.Models
 
         public string FeePayer { get; set; }
 
+        public string AdditionalSigner { get; set; }
+
         public DateTime CreateTime { get; set; }
 
         public DateTime? ExecuteTime { get; set; }
@@ -188,6 +196,8 @@ namespace NexoAPI.Models
         public string Creator { get; set; }
 
         public string FeePayer { get; set; }
+
+        public string AdditionalSigner { get; set; }
 
         public DateTime CreateTime { get; set; }
 
