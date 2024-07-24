@@ -184,14 +184,30 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = $"Threshold incorrect.", data = $"Threshold: {request.Threshold}" });
             }
 
-            //创建多签账户
-            var account = new Account()
+            //如果 PublicKeys 只有一个，则创建单签地址，而非 1/1 多签
+            var account = new Account();
+            if (request.PublicKeys.Count() == 1)
             {
-                Owners = string.Join(',', owners),
-                PublicKeys = string.Join(',', request.PublicKeys),
-                Threshold = request.Threshold,
-                Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress()
-            };
+                //创建单签账户
+                account = new Account()
+                {
+                    Owners = string.Join(',', owners),
+                    PublicKeys = string.Join(',', request.PublicKeys),
+                    Threshold = request.Threshold,
+                    Address = Contract.CreateSignatureContract(ECPoint.Parse(request.PublicKeys.First(), ECCurve.Secp256r1)).ScriptHash.ToAddress()
+                };
+            }
+            else
+            {
+                //创建多签账户
+                account = new Account()
+                {
+                    Owners = string.Join(',', owners),
+                    PublicKeys = string.Join(',', request.PublicKeys),
+                    Threshold = request.Threshold,
+                    Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress()
+                };
+            }
             var accountItem = _context.Account.FirstOrDefault(p => p.Address == account.Address);
             //重复值检查
             if (accountItem is null)
