@@ -1,5 +1,6 @@
 ﻿using Neo.Network.RPC;
 using Newtonsoft.Json.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NexoAPI.Models
 {
@@ -84,6 +85,19 @@ namespace NexoAPI.Models
 
         public static object GetResponse(Transaction p)
         {
+            var min = p.Account.Threshold;
+            var owners = p.Account.Owners.Split(',').ToList();
+            if (!owners.Contains(p.FeePayer) && p.Account.Address != p.FeePayer)
+                min++;
+            if (!owners.Contains(p.AdditionalSigner) && p.Account.Address != p.AdditionalSigner)
+                min++;
+
+            if (p.Account.Address != p.FeePayer)
+                owners.Append(p.FeePayer);
+            if (p.Account.Address != p.AdditionalSigner)
+                owners.Append(p.AdditionalSigner);
+            var max = owners.Distinct().Count();
+
             if (p.Type == TransactionType.Invocation)
             {
                 return new InvocationTransactionResponse()
@@ -96,6 +110,9 @@ namespace NexoAPI.Models
                     Creator = p.Creator,
                     FeePayer = p.FeePayer,
                     AdditionalSigner = p.AdditionalSigner,
+                    MinimumSignaturesCount = min,
+                    MaximumSignaturesCount = max,
+                    OwnersCount = p.Account.Threshold,
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
@@ -103,7 +120,7 @@ namespace NexoAPI.Models
                     ContractHash = p.ContractHash,
                     Operation = p.Operation,
                     Params = JArray.Parse(p.Params)
-                };
+                }; 
             }
             else if (p.Type == TransactionType.Nep17Transfer)
             {
@@ -117,6 +134,9 @@ namespace NexoAPI.Models
                     Creator = p.Creator,
                     FeePayer = p.FeePayer,
                     AdditionalSigner = p.AdditionalSigner,
+                    MinimumSignaturesCount = min,
+                    MaximumSignaturesCount = max,
+                    OwnersCount = p.Account.Threshold,
                     CreateTime = p.CreateTime,
                     ExecuteTime = p.ExecuteTime > new DateTime(2023, 1, 1) ? p.ExecuteTime : null,
                     Status = p.Status.ToString(),
@@ -166,6 +186,12 @@ namespace NexoAPI.Models
 
         public string AdditionalSigner { get; set; }
 
+        public int MinimumSignaturesCount { get; set; }
+
+        public int MaximumSignaturesCount { get; set; }
+
+        public int OwnersCount { get; set; }
+
         public DateTime CreateTime { get; set; }
 
         public DateTime? ExecuteTime { get; set; }
@@ -198,6 +224,12 @@ namespace NexoAPI.Models
         public string FeePayer { get; set; }
 
         public string AdditionalSigner { get; set; }
+
+        public int MinimumSignaturesCount { get; set; }
+
+        public int MaximumSignaturesCount { get; set; }
+
+        public int OwnersCount { get; set; }
 
         public DateTime CreateTime { get; set; }
 

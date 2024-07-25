@@ -116,6 +116,16 @@ namespace NexoAPI.Controllers
             return new ObjectResult(result);
         }
 
+        [HttpGet("debug/{txid}")]
+        public ObjectResult GetTransaction(string txid)
+        {
+            var result = _context.Transaction.Where(p => p.Hash == txid).FirstOrDefault();
+            var json = JObject.FromObject(result);
+            json["RawData"] = JObject.Parse(json["RawData"].ToString());
+            json["Params"] = JArray.Parse(json["Params"].ToString());
+            return new ObjectResult(json);
+        }
+
         [HttpPost]
         public async Task<ObjectResult> PostTransaction(TransactionRequest request)
         {
