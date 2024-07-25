@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Neo;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -123,6 +124,18 @@ namespace NexoAPI.Controllers
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
             json["Params"] = JArray.Parse(json["Params"].ToString());
+            json.Remove("SignResult");
+            json.Remove("ValidUntilBlock");
+            json.Remove("Account");
+            json.Remove("Id");
+            json.Remove("Hash");
+            if(string.IsNullOrEmpty(json["FailReason"].ToString())) json.Remove("FailReason");
+            if (string.IsNullOrEmpty(json["Destination"].ToString())) json.Remove("Destination");
+            if (string.IsNullOrEmpty(json["Amount"].ToString())) json.Remove("Amount");
+            if (string.IsNullOrEmpty(json["Params"].ToString())) json.Remove("Params");
+            if (string.IsNullOrEmpty(json["Operation"].ToString())) json.Remove("Operation");
+            json["Type"] = ((TransactionType)(int)json["Type"]).ToString();
+            json["Status"] = ((TransactionStatus)(int)json["Status"]).ToString();
             return new ObjectResult(json);
         }
 
