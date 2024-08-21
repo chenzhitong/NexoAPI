@@ -1,76 +1,84 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using NexoAPI;
 using NexoAPI.Data;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<NexoAPIContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("NexoAPIContext") ?? throw new InvalidOperationException("Connection string 'NexoAPIContext' not found.")));
-
-// Add services to the container.
-
-builder.Services.AddControllers(options =>
+namespace NexoAPI
 {
-    options.Filters.Add<ValidationFilter>();
-    options.Filters.Add<GlobalExceptionFilter>();
-}).AddNewtonsoftJson(options =>
-{
-    options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-    options.SerializerSettings.DateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
-});
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
+    public class Program
     {
-        Title = "Nexo API",
-        Version = "1.0",
-        Description = "Nexo API Swagger Doc"
-    });
-    var file = Path.Combine(AppContext.BaseDirectory, "NexoAPI.xml");  // xmlÎÄµµ¾ø¶ÔÂ·¾¶
-    var path = Path.Combine(AppContext.BaseDirectory, file); // xmlÎÄµµ¾ø¶ÔÂ·¾¶
-    c.IncludeXmlComments(path, true); // true : ÏÔÊ¾¿ØÖÆÆ÷²ã×¢ÊÍ
-    c.OrderActionsBy(o => o.RelativePath); // ¶ÔactionµÄÃû³Æ½øĞĞÅÅĞò£¬Èç¹ûÓĞ¶à¸ö£¬¾Í¿ÉÒÔ¿´¼ûĞ§¹ûÁË¡£
-
-    // Ìí¼Ó JWT ¼øÈ¨
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme.",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer"
-    });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        public static void Main(string[] args)
         {
-            new OpenApiSecurityScheme
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddDbContext<NexoAPIContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("NexoAPIContext") ?? throw new InvalidOperationException("Connection string 'NexoAPIContext' not found.")));
+
+            // Add services to the container.
+
+            builder.Services.AddControllers(options =>
             {
-                Reference = new OpenApiReference
+                options.Filters.Add<ValidationFilter>();
+                options.Filters.Add<GlobalExceptionFilter>();
+            }).AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
+                options.SerializerSettings.DateFormatString = "yyyy-MM-ddTHH:mm:ss.FFFZ";
+            });
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+                    Title = "Nexo API",
+                    Version = "1.0",
+                    Description = "Nexo API Swagger Doc"
+                });
+                var file = Path.Combine(AppContext.BaseDirectory, "NexoAPI.xml");  // xmlæ–‡æ¡£ç»å¯¹è·¯å¾„
+                var path = Path.Combine(AppContext.BaseDirectory, file); // xmlæ–‡æ¡£ç»å¯¹è·¯å¾„
+                c.IncludeXmlComments(path, true); // true : æ˜¾ç¤ºæ§åˆ¶å™¨å±‚æ³¨é‡Š
+                c.OrderActionsBy(o => o.RelativePath); // å¯¹actionçš„åç§°è¿›è¡Œæ’åºï¼Œå¦‚æœæœ‰å¤šä¸ªï¼Œå°±å¯ä»¥çœ‹è§æ•ˆæœäº†ã€‚
+
+                // æ·»åŠ  JWT é‰´æƒ
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme.",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer"
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddHostedService<BackgroundTask>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAllDomain",
+                    builder => builder
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .SetIsOriginAllowed(_ => true)
+                        .AllowAnyHeader());
+            });
+            var app = builder.Build();
+            app.UseMiddleware<NotFoundMiddleware>();
+            app.UseSwagger();
+            app.UseSwaggerUI();
+            app.UseHttpsRedirection();
+            app.UseAuthorization();
+            app.UseCors("AllowAllDomain");
+            app.MapControllers();
+            app.Run();
         }
-    });
-});
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHostedService<BackgroundTask>();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAllDomain",
-        builder => builder
-            .AllowAnyMethod()
-            .AllowCredentials()
-            .SetIsOriginAllowed(_ => true)
-            .AllowAnyHeader());
-});
-var app = builder.Build();
-app.UseMiddleware<NotFoundMiddleware>();
-app.UseSwagger();
-app.UseSwaggerUI();
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.UseCors("AllowAllDomain");
-app.MapControllers();
-app.Run();
+    }
+}
