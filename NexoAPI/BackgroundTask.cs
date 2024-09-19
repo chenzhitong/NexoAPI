@@ -125,7 +125,7 @@ namespace NexoAPI
 
                     //发送交易
                     //仅当签名完成且未发送，或已发送时间超过60秒，则广播交易
-                    if (rawTx.Witnesses.All(p => p.VerificationScript.Length > 0 && p.InvocationScript.Length > 0) && tx.Status == Models.TransactionStatus.Signing ||
+                    if (rawTx.Witnesses.All(p => (p.VerificationScript.Length == 0 && p.InvocationScript.Length == 0) ||p.VerificationScript.Length > 0 && p.InvocationScript.Length > 0) && tx.Status == Models.TransactionStatus.Signing ||
                         tx.Status == Models.TransactionStatus.Executing && (DateTime.UtcNow - tx.ExecuteTime).TotalSeconds > 60)
                     {
                         try
