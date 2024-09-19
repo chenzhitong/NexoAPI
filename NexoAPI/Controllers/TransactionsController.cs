@@ -256,6 +256,8 @@ namespace NexoAPI.Controllers
                     tx.Params = request.Params.ToString();
                     try
                     {
+                        if (request.Operation == "transfer" && request.Params.Count == 3)
+                            request.Params.Add(request.Params[2]);
                         var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, request.AdditionalSigner, contractHash, request.Operation, request.Params, additionalSignerIsContract);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
