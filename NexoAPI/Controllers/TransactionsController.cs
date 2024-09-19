@@ -198,12 +198,16 @@ namespace NexoAPI.Controllers
                 if (!_context.Account.Any(p => p.Address == request.AdditionalSigner))
                 {
                     var scriptHash = request.AdditionalSigner.ToScriptHash().ToString();
-                    var contract = Helper.Client.GetContractStateAsync(scriptHash).Result;
-                    if (contract == null)
+                    try
+                    {
+                        var rpcRequest = Helper.Client.GetContractStateAsync(scriptHash).Result;
+                        if(rpcRequest != null)
+                        additionalSignerIsContract = true;
+                    }
+                    catch (Exception)
                     {
                         return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "The additional signer must be an account that has been created on this site or a contract that has been registered on the chain.", data = $"Additional signer: {request.AdditionalSigner}" });
                     }
-                    additionalSignerIsContract = true;
                 }
             }
 
@@ -402,12 +406,11 @@ namespace NexoAPI.Controllers
                 };
             if (!string.IsNullOrEmpty(additionalSigner))
             {
-                var additionalSignerScriptHash = _context.Account.First(p => p.Address == additionalSigner).GetScriptHash();
                 result = result.Append(
                     new Neo.Network.P2P.Payloads.Signer()
                     {
                         Scopes = Neo.Network.P2P.Payloads.WitnessScope.CalledByEntry,
-                        Account = additionalSignerScriptHash
+                        Account = additionalSigner.ToScriptHash()
                     }).ToArray();
             }
             return result;
