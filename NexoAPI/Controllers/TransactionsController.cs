@@ -112,7 +112,7 @@ namespace NexoAPI.Controllers
             var result = new List<object>();
             var temp = list.Skip(skip ?? 0).ToList();
             Parallel.ForEach(temp, p => result.Add(TransactionResponse.GetResponse(p)));
-            result = result.OrderBy(p => (p as Transaction).CreateTime).ToList();
+            result = result.OrderBy(p => (p as Transaction)?.CreateTime).ToList();
             return new ObjectResult(result);
         }
 
