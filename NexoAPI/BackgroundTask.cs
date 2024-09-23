@@ -18,7 +18,7 @@ namespace NexoAPI
         {
             var scope = _serviceScopeFactory.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<NexoAPIContext>();
-            _logger = LogManager.LoadConfiguration("nlog.config").GetCurrentClassLogger();
+            _logger = LogManager.Setup().LoadConfigurationFromFile("nlog.config").GetCurrentClassLogger();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
