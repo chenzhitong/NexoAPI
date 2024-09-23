@@ -22,6 +22,7 @@
             var builder = new ConfigurationBuilder()
                             .SetBasePath(Directory.GetCurrentDirectory())
                             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                            .AddUserSecrets<ConfigHelper>(optional: true) // 添加机密管理器支持
                             .AddEnvironmentVariables();
 
             IConfigurationRoot configuration = builder.Build();
