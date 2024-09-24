@@ -122,7 +122,8 @@ namespace NexoAPI.Controllers
             var result = _context.Transaction.Where(p => p.Hash == txid).FirstOrDefault();
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
-            json["Params"] = JArray.Parse(json["Params"].ToString());
+            if(!string.IsNullOrEmpty(json["Params"].ToString()))
+                json["Params"] = JArray.Parse(json["Params"].ToString());
             json.Remove("SignResult");
             json.Remove("ValidUntilBlock");
             json.Remove("Account");

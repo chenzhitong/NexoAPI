@@ -142,6 +142,10 @@ namespace NexoAPI
                         if (height > 0)
                         {
                             p.Status = Models.TransactionStatus.Executed;
+                            if (p.ExecuteTime < new DateTime(2023, 1, 1))
+                            {
+                                _logger.Info($"交易未上链: {p.Hash}");
+                            }
                             _context.Update(p);
                             _context.SaveChanges();
                         }
