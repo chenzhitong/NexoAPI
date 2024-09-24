@@ -134,7 +134,10 @@ namespace NexoAPI
                         }
                         catch (Exception e)
                         {
-                            _logger.Error($"后台任务运行时种子节点连接失败 GetTransactionHeightAsync。{e.Message}");
+                            if(e.Message.Contains("Unknown transaction"))
+                                _logger.Info($"交易未上链: {p.Hash}");
+                            else
+                                _logger.Error($"后台任务运行时种子节点返回了异常 GetTransactionHeightAsync。{e.Message}");
                         }
                         if (height > 0)
                         {
