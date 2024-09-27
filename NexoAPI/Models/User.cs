@@ -29,6 +29,8 @@ namespace NexoAPI.Models
         public string Signature { get; set; }
 
         public string PublicKey { get; set; }
+
+        public int SignatureVersion { get; set; } = 1;
     }
 
     public class UserResponse

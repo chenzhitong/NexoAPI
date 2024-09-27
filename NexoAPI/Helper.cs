@@ -43,25 +43,34 @@ namespace NexoAPI
         public static RpcClient Client
         { get { return new(new Uri(ConfigHelper.AppSetting("SeedNode")), null, null, null); } }
 
+        static string Num2VarInt(long num)
+        {
+            return num switch
+            {
+                < 0xfd => Num2hexstring(num, 1),                // uint8
+                <= 0xffff => "fd" + Num2hexstring(num, 2),      // uint16
+                <= 0xffffffff => "fe" + Num2hexstring(num, 4),  // uint32
+                _ => "ff" + Num2hexstring(num, 8)               // uint64
+            };
+        }
+
+        static string Num2hexstring(long num, int size) => BitConverter.GetBytes(num).Take(size).ToArray().ToHexString();
+
         //https://neoline.io/signMessage/
         public static byte[] Message2ParameterOfNeoLineSignMessageFunction(string message)
         {
             var parameterHexString = Encoding.UTF8.GetBytes(message).ToHexString();
             var variableBytes = Num2VarInt(parameterHexString.Length / 2);
             return ("010001f0" + variableBytes + parameterHexString + "0000").HexToBytes();
+        }
 
-            static string Num2VarInt(long num)
-            {
-                return num switch
-                {
-                    < 0xfd => Num2hexstring(num, 1),                // uint8
-                    <= 0xffff => "fd" + Num2hexstring(num, 2),      // uint16
-                    <= 0xffffffff => "fe" + Num2hexstring(num, 4),  // uint32
-                    _ => "ff" + Num2hexstring(num, 8)               // uint64
-                };
-            }
-
-            static string Num2hexstring(long num, int size) => BitConverter.GetBytes(num).Take(size).ToArray().ToHexString();
+        public static byte[] Message2ParameterOfNeoLineSignMessageFunctionV2(string message)
+        {
+            var parameterHexString = Encoding.UTF8.GetBytes(message).ToHexString();
+            var lengthHex = Num2VarInt(parameterHexString.Length / 2);
+            var messageHex = "000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000" +
+        lengthHex + parameterHexString;
+            return (Num2hexstring(0, 4) + messageHex.Sha256()).HexToBytes();
         }
 
         public static byte[] GetSignData(UInt256 txHash)
@@ -90,6 +99,11 @@ namespace NexoAPI
         public static string Sha256(this string input)
         {
             return BitConverter.ToString(SHA256.HashData(Encoding.UTF8.GetBytes(input))).Replace("-", string.Empty);
+        }
+
+        public static string Sha256(this byte[] input)
+        {
+            return BitConverter.ToString(SHA256.HashData(input)).Replace("-", string.Empty);
         }
 
         public static bool VerifySignature(byte[] message, string pubkey, string signatureHex)

@@ -68,15 +68,35 @@ namespace NexoAPI.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "Public key and address mismatch." });
             }
 
-            //生成待签名的消息
-            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce).Replace("\r\n", "\n");
-            var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
-
-            //验证签名
-            if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
+            if (request.SignatureVersion == 1)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification failure.", data = $"Message: {message}" });
+                //生成待签名的消息
+                var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce).Replace("\r\n", "\n");
+                var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
+
+                //验证签名
+                if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v1) failure.", data = $"Message: {message} SignMessage: {hexStr}" });
+                }
             }
+            else if (request.SignatureVersion == 2)
+            {
+                //生成待签名的消息
+                var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce.Nonce).Replace("\r\n", "\n");
+                var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunctionV2(message);
+
+                //验证签名
+                if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
+                {
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v2) failure.", data = $"Message: {message} SignMessage: {hexStr}" });
+                }
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "signatureVersion incorrect.", data = $"signatureVersion: {request.SignatureVersion}" });
+            }
+
 
             //创建 User
             var user = new Models.User()
@@ -114,8 +134,24 @@ namespace NexoAPI.Controllers
             var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress();
             var nonce = new NoncesController().PostNonce();
             var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce).Replace("\r\n", "\n");
-            ;
+
             var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunction(message);
+            var signature = Crypto.Sign(hexStr, privateKey, Neo.Cryptography.ECC.ECCurve.Secp256r1);
+            return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
+        }
+
+        [HttpPut("sign-in-test-v2")]
+        public ObjectResult TestV2()
+        {
+            var privateKey = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(privateKey);
+            var publicKey = new KeyPair(privateKey).PublicKey;
+            var address = Contract.CreateSignatureContract(publicKey).ScriptHash.ToAddress();
+            var nonce = new NoncesController().PostNonce();
+            var message = string.Format(System.IO.File.ReadAllText("message.txt"), address, nonce).Replace("\r\n", "\n");
+
+            var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunctionV2(message);
             var signature = Crypto.Sign(hexStr, privateKey, Neo.Cryptography.ECC.ECCurve.Secp256r1);
             return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
         }
