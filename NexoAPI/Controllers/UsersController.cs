@@ -77,7 +77,7 @@ namespace NexoAPI.Controllers
                 //验证签名
                 if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v1) failure.", data = $"Message: {message} SignMessage: {hexStr}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v1) failure.", data = $"Message: {message}\r\nSignMessage: {hexStr.ToHexString()}" });
                 }
             }
             else if (request.SignatureVersion == 2)
@@ -89,7 +89,7 @@ namespace NexoAPI.Controllers
                 //验证签名
                 if (!Helper.VerifySignature(hexStr, request.PublicKey, request.Signature))
                 {
-                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v2) failure.", data = $"Message: {message} SignMessage: {hexStr}" });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidSignature", message = "Signature verification(v2) failure.", data = $"Message: {message}\r\nSignMessage: {hexStr.ToHexString()}" });
                 }
             }
             else

@@ -70,7 +70,7 @@ namespace NexoAPI
             var lengthHex = Num2VarInt(parameterHexString.Length / 2);
             var messageHex = "000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000" +
         lengthHex + parameterHexString;
-            return (Num2hexstring(0, 4) + messageHex.Sha256()).HexToBytes();
+            return (Num2hexstring(0, 4) + messageHex.HexToBytes().Sha256()).HexToBytes();
         }
 
         public static byte[] GetSignData(UInt256 txHash)
