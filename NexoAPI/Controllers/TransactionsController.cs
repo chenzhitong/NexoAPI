@@ -4,6 +4,7 @@ using Neo;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Network.RPC;
+using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.VM;
 using Newtonsoft.Json.Linq;
@@ -123,6 +124,9 @@ namespace NexoAPI.Controllers
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
             if(!string.IsNullOrEmpty(json["Params"].ToString()))
                 json["Params"] = JArray.Parse(json["Params"].ToString());
+            var setting = ProtocolSettings.Load(ConfigHelper.AppSetting("Config"));
+            var cpc = new ContractParametersContext(null, RpcTransaction.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(json["RawData"].ToString()), setting).Transaction, setting.Network);
+            json["contractParametersContext"] = JObject.Parse(cpc.ToJson().ToString());
             json.Remove("SignResult");
             json.Remove("ValidUntilBlock");
             json.Remove("Account");
