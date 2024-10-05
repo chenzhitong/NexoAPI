@@ -125,7 +125,7 @@ namespace NexoAPI
                     }
 
                     //后台任务二：检查交易是否上链并修改交易状态
-                    _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing).ToList().ForEach(p =>
+                    _context.Transaction.Where(p => p.Status == Models.TransactionStatus.Executing || p.Status == Models.TransactionStatus.Failed && p.FailReason.Contains("AlreadyInPool")).ToList().ForEach(p =>
                     {
                         var height = 0u;
                         try
