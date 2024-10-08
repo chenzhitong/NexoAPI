@@ -113,10 +113,18 @@ namespace NexoAPI
                             {
                                 if (tx.Status != Models.TransactionStatus.Executed)
                                 {
-                                    _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
-                                    tx.Status = Models.TransactionStatus.Failed;
-                                    tx.FailReason = e.Message;
-                                    tx.ExecuteTime = DateTime.UtcNow;
+                                    if (e.Message.Contains("AlreadyInPool"))
+                                    {
+                                        tx.Status = Models.TransactionStatus.Executing;
+                                        tx.ExecuteTime = DateTime.UtcNow;
+                                    }
+                                    else
+                                    {
+                                        _logger.Error($"发送交易时出错，TxId = {tx.Hash}, Exception: {e.Message}");
+                                        tx.Status = Models.TransactionStatus.Failed;
+                                        tx.FailReason = e.Message;
+                                        tx.ExecuteTime = DateTime.UtcNow;
+                                    }
                                 }
                             }
                             _context.Update(tx);
