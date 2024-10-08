@@ -122,11 +122,12 @@ namespace NexoAPI.Controllers
             var result = _context.Transaction.Where(p => p.Hash == txid).FirstOrDefault();
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
-            if(!string.IsNullOrEmpty(json["Params"].ToString()))
+            if (!string.IsNullOrEmpty(json["Params"].ToString()))
                 json["Params"] = JArray.Parse(json["Params"].ToString());
             var setting = ProtocolSettings.Load(ConfigHelper.AppSetting("Config"));
             var cpc = new ContractParametersContext(null, RpcTransaction.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(json["RawData"].ToString()), setting).Transaction, setting.Network);
             json["contractParametersContext"] = JObject.Parse(cpc.ToJson().ToString());
+            json["sha256ScriptForLedger"] = Convert.FromBase64String(json["RawData"]["script"].ToString()).ToHexString().Sha256();
             json.Remove("SignResult");
             json.Remove("ValidUntilBlock");
             json.Remove("Account");
