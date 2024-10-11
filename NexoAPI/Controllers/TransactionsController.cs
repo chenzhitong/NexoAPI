@@ -120,6 +120,7 @@ namespace NexoAPI.Controllers
         public ObjectResult GetTransaction(string txid)
         {
             var result = _context.Transaction.Where(p => p.Hash == txid).FirstOrDefault();
+            if(result == null) return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {txid} does not exist." });
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
             if (!string.IsNullOrEmpty(json["Params"].ToString()))
