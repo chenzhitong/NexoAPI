@@ -19,7 +19,9 @@ namespace NexoAPI.Models
 
         public ICollection<SignResult> SignResult { get; set; }
 
-        public byte[] GetScript() => Contract.CreateSignatureContract(ECPoint.Parse(PublicKey, ECCurve.Secp256r1)).Script;
+        public Contract GetContract() => Contract.CreateSignatureContract(ECPoint.Parse(PublicKey, ECCurve.Secp256r1));
+
+        public byte[] GetScript() => GetContract().Script;
     }
 
     public class UserRequest

@@ -26,23 +26,18 @@ namespace NexoAPI.Models
         public decimal Nep17ValueUsd { get; set; }
 
         //如果 PublicKeys 只有一个，则创建单签地址，而非 1/1 多签
-        public UInt160 GetScriptHash()
-        {
-            var publicKeys = PublicKeys.Split(",").ToList();
-            if (publicKeys.Count() == 1)
-                return Contract.CreateSignatureContract(ECPoint.Parse(publicKeys.First(), ECCurve.Secp256r1)).ScriptHash;
-            else
-                return Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash;
-        }
+        public UInt160 GetScriptHash() => GetContract().ScriptHash;
 
         //如果 PublicKeys 只有一个，则创建单签地址，而非 1/1 多签
-        public byte[] GetScript()
+        public byte[] GetScript() => GetContract().Script;
+
+        public Contract GetContract()
         {
             var publicKeys = PublicKeys.Split(",").ToList();
             if (publicKeys.Count() == 1)
-                return Contract.CreateSignatureContract(ECPoint.Parse(publicKeys.First(), ECCurve.Secp256r1)).Script;
+                return Contract.CreateSignatureContract(ECPoint.Parse(publicKeys.First(), ECCurve.Secp256r1));
             else
-                return Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).Script;
+                return Contract.CreateMultiSigContract(Threshold, PublicKeys.Split(',').ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1)));
         }
     }
 

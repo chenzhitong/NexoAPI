@@ -7,7 +7,6 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.VM;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
@@ -120,7 +119,7 @@ namespace NexoAPI.Controllers
         [HttpGet("debug/{txid}")]
         public ObjectResult GetTransaction(string txid)
         {
-            var resultIncludeAll = _context.Transaction.Include(p => p.SignResult).ThenInclude(p => p.Signer).Where(p => p.Hash == txid).FirstOrDefault();
+            var resultIncludeAll = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult).ThenInclude(p => p.Signer).Where(p => p.Hash == txid).FirstOrDefault();
             var signResultJson = JArray.FromObject(resultIncludeAll.SignResult.Select(p => new { p.Signer.Address, p.Signer.PublicKey, p.Approved, p.Signature }));
 
             var result = _context.Transaction.AsNoTracking().Where(p => p.Hash == txid).FirstOrDefault();
@@ -131,7 +130,30 @@ namespace NexoAPI.Controllers
             if (!string.IsNullOrEmpty(json["Params"].ToString()))
                 json["Params"] = JArray.Parse(json["Params"].ToString());
             var setting = ProtocolSettings.Load(ConfigHelper.AppSetting("Config"));
+            //构造ContractParametersContext以通过neo-cli签名
             var cpc = new ContractParametersContext(null, RpcTransaction.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(json["RawData"].ToString()), setting).Transaction, setting.Network);
+            if (!string.IsNullOrEmpty(resultIncludeAll.AdditionalSigner))
+            {
+                var additionalSigner = _context.Account.FirstOrDefault(p => p.Address == resultIncludeAll.AdditionalSigner);
+                var additionalSignerPublicKey = ECPoint.Parse(additionalSigner.PublicKeys, ECCurve.Secp256r1);
+                var additionalSignResult = resultIncludeAll.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == resultIncludeAll.AdditionalSigner);
+                cpc.AddSignature(additionalSigner.GetContract(), additionalSignerPublicKey, additionalSignResult.Signature.HexToBytes());
+            }
+            if (resultIncludeAll.FeePayer != resultIncludeAll.Account.Address && resultIncludeAll.FeePayer != resultIncludeAll.AdditionalSigner)
+            {
+                var feePayer = _context.User.FirstOrDefault(p => p.Address == resultIncludeAll.FeePayer);
+                var feePayerPublicKey = ECPoint.Parse(feePayer.PublicKey, ECCurve.Secp256r1);
+                var feePayerSignResult = resultIncludeAll.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == resultIncludeAll.FeePayer);
+                cpc.AddSignature(feePayer.GetContract(), feePayerPublicKey, feePayerSignResult.Signature.HexToBytes());
+            }
+            var ps = resultIncludeAll.Account.PublicKeys.Split(",").ToList();
+            foreach (var p in ps)
+            {
+                var signResult = resultIncludeAll.SignResult.FirstOrDefault(s => s.Approved && s.Signer.PublicKey == p);
+                if(signResult != null)
+                    cpc.AddSignature(resultIncludeAll.Account.GetContract(), ECPoint.Parse(p, ECCurve.Secp256r1), signResult.Signature.HexToBytes());
+            }
+
             json["contractParametersContext"] = JObject.Parse(cpc.ToJson().ToString());
             json["sha256ScriptForLedger"] = Convert.FromBase64String(json["RawData"]["script"].ToString()).ToHexString().Sha256();
             json["signResult"] = signResultJson;
