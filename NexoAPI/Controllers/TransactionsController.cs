@@ -7,6 +7,7 @@ using Neo.Network.RPC;
 using Neo.Network.RPC.Models;
 using Neo.SmartContract;
 using Neo.VM;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NexoAPI.Data;
 using NexoAPI.Models;
@@ -119,8 +120,12 @@ namespace NexoAPI.Controllers
         [HttpGet("debug/{txid}")]
         public ObjectResult GetTransaction(string txid)
         {
-            var result = _context.Transaction.Where(p => p.Hash == txid).FirstOrDefault();
+            var resultIncludeAll = _context.Transaction.Include(p => p.SignResult).ThenInclude(p => p.Signer).Where(p => p.Hash == txid).FirstOrDefault();
+            var signResultJson = JArray.FromObject(resultIncludeAll.SignResult.Select(p => new { p.Signer.Address, p.Signer.PublicKey, p.Approved, p.Signature }));
+
+            var result = _context.Transaction.AsNoTracking().Where(p => p.Hash == txid).FirstOrDefault();
             if(result == null) return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {txid} does not exist." });
+
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
             if (!string.IsNullOrEmpty(json["Params"].ToString()))
@@ -129,6 +134,7 @@ namespace NexoAPI.Controllers
             var cpc = new ContractParametersContext(null, RpcTransaction.FromJson((Neo.Json.JObject)Neo.Json.JObject.Parse(json["RawData"].ToString()), setting).Transaction, setting.Network);
             json["contractParametersContext"] = JObject.Parse(cpc.ToJson().ToString());
             json["sha256ScriptForLedger"] = Convert.FromBase64String(json["RawData"]["script"].ToString()).ToHexString().Sha256();
+            json["signResult"] = signResultJson;
             json.Remove("SignResult");
             json.Remove("ValidUntilBlock");
             json.Remove("Account");
