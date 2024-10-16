@@ -64,6 +64,8 @@ namespace NexoAPI.Models
         public string Amount { get; set; } = string.Empty;
 
         public string Destination { get; set; } = string.Empty;
+
+        public uint ValidBlocks { get; set; } = 5760;
     }
 
     public class Params

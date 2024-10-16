@@ -158,7 +158,6 @@ namespace NexoAPI.Controllers
             json["sha256ScriptForLedger"] = Convert.FromBase64String(json["RawData"]["script"].ToString()).ToHexString().Sha256();
             json["signResult"] = signResultJson;
             json.Remove("SignResult");
-            json.Remove("ValidUntilBlock");
             json.Remove("Account");
             json.Remove("Id");
             json.Remove("Hash");
@@ -245,6 +244,11 @@ namespace NexoAPI.Controllers
                 }
             }
 
+            if (request.ValidBlocks < 1 || request.ValidBlocks > 5760)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "ValidBlocks is incorrect.", data = $"ValidBlocks: {request.ValidBlocks}" });
+            }
+
             //验证ContractHash
             if (!UInt160.TryParse(request.ContractHash, out UInt160 contractHash))
             {
@@ -274,7 +278,7 @@ namespace NexoAPI.Controllers
                 CreateTime = DateTime.UtcNow,
                 Status = TransactionStatus.Signing,
                 ContractHash = request.ContractHash,
-                ValidUntilBlock = Helper.GetBlockCount().Result + 5760
+                ValidUntilBlock = Helper.GetBlockCount().Result + request.ValidBlocks
             };
 
             if (Enum.TryParse(request.Type, out TransactionType type))
