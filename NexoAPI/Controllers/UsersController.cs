@@ -153,7 +153,24 @@ namespace NexoAPI.Controllers
 
             var hexStr = Helper.Message2ParameterOfNeoLineSignMessageFunctionV2(message);
             var signature = Crypto.Sign(hexStr, privateKey, Neo.Cryptography.ECC.ECCurve.Secp256r1);
-            return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message });
+            var tx = Helper.Message2LedgerTransaction(message);
+            return new ObjectResult(new { Address = address, Nonce = nonce, Signature = signature.ToHexString(), PublicKey = publicKey.ToArray().ToHexString(), Message = message, Json = ToJson(tx) });
+        }
+
+        public static Newtonsoft.Json.Linq.JObject ToJson(Neo.Network.P2P.Payloads.Transaction tx)
+        {
+            Neo.Json.JObject json = new();
+            json["hash"] = tx.Hash.ToString();
+            json["version"] = tx.Version;
+            json["nonce"] = tx.Nonce;
+            json["sender"] = tx.Sender.ToString();
+            json["sysfee"] = tx.SystemFee.ToString();
+            json["netfee"] = tx.NetworkFee.ToString();
+            json["validuntilblock"] = tx.ValidUntilBlock;
+            json["attributes"] = tx.Attributes.Select(p => p.ToJson()).ToArray();
+            json["script"] = Convert.ToBase64String(tx.Script.Span);
+            json["sha256 script in Ledger"] = tx.Script.ToArray().Sha256().ToUpper();
+            return Newtonsoft.Json.Linq.JObject.Parse(json.ToString());
         }
 
         [HttpGet]

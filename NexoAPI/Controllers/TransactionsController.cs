@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Akka.Actor;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Neo;
 using Neo.Cryptography.ECC;
@@ -12,6 +13,7 @@ using NexoAPI.Data;
 using NexoAPI.Models;
 using NLog;
 using System.Numerics;
+using System.Xml.Linq;
 
 namespace NexoAPI.Controllers
 {
@@ -120,11 +122,9 @@ namespace NexoAPI.Controllers
         public ObjectResult GetTransaction(string txid)
         {
             var resultIncludeAll = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult).ThenInclude(p => p.Signer).Where(p => p.Hash == txid).FirstOrDefault();
-            var signResultJson = JArray.FromObject(resultIncludeAll.SignResult.Select(p => new { p.Signer.Address, p.Signer.PublicKey, p.Approved, p.Signature }));
-
             var result = _context.Transaction.AsNoTracking().Where(p => p.Hash == txid).FirstOrDefault();
             if(result == null) return StatusCode(StatusCodes.Status400BadRequest, new { code = "NotFound", message = $"Transaction {txid} does not exist." });
-
+            var signResultJson = JArray.FromObject(resultIncludeAll.SignResult.Select(p => new { p.Signer.Address, p.Signer.PublicKey, p.Approved, p.Signature }));
             var json = JObject.FromObject(result);
             json["RawData"] = JObject.Parse(json["RawData"].ToString());
             if (!string.IsNullOrEmpty(json["Params"].ToString()))
@@ -244,7 +244,7 @@ namespace NexoAPI.Controllers
                 }
             }
 
-            if (request.ValidBlocks < 1 || request.ValidBlocks > 5760)
+            if (request.ValidBlocks < 0 || request.ValidBlocks > 5760)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "ValidBlocks is incorrect.", data = $"ValidBlocks: {request.ValidBlocks}" });
             }

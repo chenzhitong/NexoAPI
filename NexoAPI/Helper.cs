@@ -73,6 +73,18 @@ namespace NexoAPI
             return (Num2hexstring(0, 4) + messageHex.HexToBytes().Sha256()).HexToBytes();
         }
 
+        public static Neo.Network.P2P.Payloads.Transaction Message2LedgerTransaction(string message)
+        {
+            var parameterHexString = Encoding.UTF8.GetBytes(message).ToHexString();
+            var lengthHex = Num2VarInt(parameterHexString.Length / 2);
+            var messageHex = "000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000" +
+        lengthHex + parameterHexString;
+            var tx = new Neo.Network.P2P.Payloads.Transaction();
+            var reader = new MemoryReader(messageHex.HexToBytes());
+            tx.DeserializeUnsigned(ref reader);
+            return tx;
+        }
+
         public static byte[] GetSignData(UInt256 txHash)
         {
             using MemoryStream ms = new();
