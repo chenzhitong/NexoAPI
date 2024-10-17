@@ -295,7 +295,7 @@ namespace NexoAPI.Controllers
                     try
                     {
                         if (request.Operation == "transfer" && request.Params.Count == 3)
-                            request.Params.Add(request.Params[2]);
+                            request.Params.Add(JValue.CreateNull());
                         var rawTx = InvocationFromMultiSignAccount(accountItem, request.FeePayer, request.AdditionalSigner, contractHash, request.Operation, request.Params, additionalSignerIsContract);
                         tx.RawData = rawTx.ToJson(ProtocolSettings.Load(ConfigHelper.AppSetting("Config"))).ToString();
                         tx.Hash = rawTx.Hash.ToString();
@@ -383,7 +383,7 @@ namespace NexoAPI.Controllers
             {
                 throw new ArgumentException();
             }
-            var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, bigInteger, true);
+            var script = contractHash.MakeScript("transfer", account.GetScriptHash(), receiver, bigInteger, null);
 
             var signers = CalculateSigners(account, feePayer, additionalSigner);
             var tx = new TransactionManagerFactory(Helper.Client).MakeTransactionAsync(script, signers).Result.Tx;
