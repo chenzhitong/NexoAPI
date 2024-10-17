@@ -137,20 +137,22 @@ namespace NexoAPI.Controllers
                 var additionalSigner = _context.Account.FirstOrDefault(p => p.Address == resultIncludeAll.AdditionalSigner);
                 var additionalSignerPublicKey = ECPoint.Parse(additionalSigner.PublicKeys, ECCurve.Secp256r1);
                 var additionalSignResult = resultIncludeAll.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == resultIncludeAll.AdditionalSigner);
-                cpc.AddSignature(additionalSigner.GetContract(), additionalSignerPublicKey, additionalSignResult.Signature.HexToBytes());
+                if(additionalSignResult != null && additionalSignResult.Signature != null) 
+                    cpc.AddSignature(additionalSigner.GetContract(), additionalSignerPublicKey, additionalSignResult.Signature.HexToBytes());
             }
             if (resultIncludeAll.FeePayer != resultIncludeAll.Account.Address && resultIncludeAll.FeePayer != resultIncludeAll.AdditionalSigner)
             {
                 var feePayer = _context.User.FirstOrDefault(p => p.Address == resultIncludeAll.FeePayer);
                 var feePayerPublicKey = ECPoint.Parse(feePayer.PublicKey, ECCurve.Secp256r1);
                 var feePayerSignResult = resultIncludeAll.SignResult.FirstOrDefault(p => p.Approved && p.Signer.Address == resultIncludeAll.FeePayer);
-                cpc.AddSignature(feePayer.GetContract(), feePayerPublicKey, feePayerSignResult.Signature.HexToBytes());
+                if (feePayerSignResult != null && feePayerSignResult.Signature != null) 
+                    cpc.AddSignature(feePayer.GetContract(), feePayerPublicKey, feePayerSignResult.Signature.HexToBytes());
             }
             var ps = resultIncludeAll.Account.PublicKeys.Split(",").ToList();
             foreach (var p in ps)
             {
                 var signResult = resultIncludeAll.SignResult.FirstOrDefault(s => s.Approved && s.Signer.PublicKey == p);
-                if(signResult != null)
+                if(signResult != null && signResult.Signature != null)
                     cpc.AddSignature(resultIncludeAll.Account.GetContract(), ECPoint.Parse(p, ECCurve.Secp256r1), signResult.Signature.HexToBytes());
             }
 
