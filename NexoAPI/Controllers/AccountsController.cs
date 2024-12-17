@@ -84,7 +84,21 @@ namespace NexoAPI.Controllers
             }
             var result = new List<AccountResponse>();
             var temp = list.Skip(skip ?? 0).Take(limit ?? 100).ToList();
-            Parallel.ForEach(temp, p => { result.Add(new AccountResponse(p, currentUser)); });
+            foreach (var acc in temp)
+            {
+                //当前账户的交易中包含当前用户待签名的交易的数量
+                var SignableTransactionsCount = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
+                        .Where(p => p.Account.Address == acc.Address || p.AdditionalSigner == currentUser.Address)
+                        .Where(p => p.Status == TransactionStatus.Signing && !p.SignResult.Any(p => p.Signer.Address.Contains(currentUser.Address))).Count();
+                var LastTransactionCreateTime = _context.Transaction.Include(p => p.Account).Where(p => p.Account.Address == acc.Address).OrderByDescending(p => p.CreateTime).FirstOrDefault()?.CreateTime;
+
+                var response = new AccountResponse(acc, currentUser)
+                {
+                    SignableTransactionsCount = SignableTransactionsCount,
+                    LastTransactionCreateTime = LastTransactionCreateTime
+                };
+                result.Add(response);
+            }
             result.OrderBy(p => p.CreateTime);
             return new ObjectResult(result);
         }
@@ -133,7 +147,18 @@ namespace NexoAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InternalError", message = "An error occurs when requesting the OneGateExplorer API." });
             }
-            return new ObjectResult(new AccountResponse(account, currentUser));
+            //当前账户的交易中包含当前用户待签名的交易的数量
+            var SignableTransactionsCount = _context.Transaction.Include(p => p.Account).Include(p => p.SignResult)
+                    .Where(p => p.Account.Address == account.Address || p.AdditionalSigner == currentUser.Address)
+                    .Where(p => p.Status == TransactionStatus.Signing && !p.SignResult.Any(p => p.Signer.Address.Contains(currentUser.Address))).Count();
+            var LastTransactionCreateTime = _context.Transaction.Include(p => p.Account).Where(p => p.Account.Address == account.Address).OrderByDescending(p => p.CreateTime).FirstOrDefault()?.CreateTime;
+
+            var response = new AccountResponse(account, currentUser)
+            {
+                SignableTransactionsCount = SignableTransactionsCount,
+                LastTransactionCreateTime = LastTransactionCreateTime
+            };
+            return new ObjectResult(response);
         }
 
         [HttpGet("valuation-test/{address}")]

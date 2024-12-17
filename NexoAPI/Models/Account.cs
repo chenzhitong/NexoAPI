@@ -60,6 +60,7 @@ namespace NexoAPI.Models
             Remark = p.Remark.FirstOrDefault(p => p.User == currentUser)?.RemarkName;
             CreateTime = p.Remark.Min(p => p.CreateTime);
             Nep17ValueUsd = Helper.GetNep17AssetsValue(p.Address);
+            
         }
 
         public string Address { get; set; }
@@ -73,5 +74,9 @@ namespace NexoAPI.Models
         public DateTime CreateTime { get; set; }
 
         public decimal Nep17ValueUsd { get; set; }
+
+        public int SignableTransactionsCount { get; set; }
+
+        public DateTime? LastTransactionCreateTime { get; set; }
     }
 }
