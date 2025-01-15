@@ -246,7 +246,7 @@ namespace NexoAPI.Controllers
                 }
             }
 
-            if (request.ValidBlocks < 0 || request.ValidBlocks > 5760)
+            if (request.ValidBlocks < 0)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new { code = "InvalidParameter", message = "ValidBlocks is incorrect.", data = $"ValidBlocks: {request.ValidBlocks}" });
             }
