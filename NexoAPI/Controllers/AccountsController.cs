@@ -233,20 +233,17 @@ namespace NexoAPI.Controllers
                     Address = Contract.CreateMultiSigContract(request.Threshold, request.PublicKeys.ToList().ConvertAll(p => ECPoint.Parse(p, ECCurve.Secp256r1))).ScriptHash.ToAddress()
                 };
             }
-            var accountItem = _context.Account.FirstOrDefault(p => p.Address == account.Address);
             //重复值检查
-            if (accountItem is null)
-            {
-                _context.Account.Add(account);
-            }
-            //创建和修改备注
+            var accountItem = _context.Account.FirstOrDefault(p => p.Address == account.Address) ?? _context.Account.Add(account).Entity;
+
             var remark = _context.Remark.FirstOrDefault(p => p.Account.Address == account.Address && p.User.Address == currentUser.Address);
             if (remark is null)
             {
+                //创建和修改备注
                 _context.Remark.Add(new Remark()
                 {
                     User = currentUser,
-                    Account = account,
+                    Account = accountItem,
                     RemarkName = request.Remark,
                     CreateTime = DateTime.UtcNow,
                     IsDeleted = false
